@@ -57,6 +57,9 @@ int main(int nc, char *np[]) {
 	return 0;
     }
     /* 作成する部分：トークンカウント用の配列？を初期化する */
+    for(int i=0;i<NUMOFTOKEN+1;i++){
+      numtoken[i] = 0;
+    }
     while((token = scan()) >= 0) {
 	/* 作成する部分：トークンをカウントする */
     }
