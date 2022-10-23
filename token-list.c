@@ -48,24 +48,24 @@ char *tokenstr[NUMOFTOKEN+1] = {
 int main(int nc, char *np[]) {
 	int token, i;
 
-    if(nc < 2) {
-	printf("File name id not given.\n");
-	return 0;
-    }
-    if(init_scan(np[1]) < 0) {
-	printf("File %s can not open.\n", np[1]);
-	return 0;
-    }
-    /* 作成する部分：トークンカウント用の配列？を初期化する */
-    for(int i=0;i<NUMOFTOKEN+1;i++){
-      numtoken[i] = 0;
-    }
-    while((token = scan()) >= 0) {
+  if(nc < 2) {
+	  printf("File name id not given.\n");
+	  return 0;
+  }
+  if(init_scan(np[1]) < 0) {
+	  printf("File %s can not open.\n", np[1]);
+	  return 0;
+  }
+  /* 作成する部分：トークンカウント用の配列？を初期化する */
+  for(int i=0;i<NUMOFTOKEN+1;i++){
+    numtoken[i] = 0;
+  }
+  while((token = scan()) >= 0) {
 	/* 作成する部分：トークンをカウントする */
-    }
-    end_scan();
+  }
+  end_scan();
     /* 作成する部分:カウントした結果を出力する */
-    return 0;
+  return 0;
 }
 
 void error(char *mes) {

@@ -1,13 +1,14 @@
 #include "token-list.h"
 
-int isSeparator(void);
-int isSymbol(void);
+int isAlpha(int c);
+int isNumber(int c);
+int isSymbol(int c);
 int getNewchar(void);
 
 int num_attr;
 char string_attr[MAXSTRSIZE];
 
-int cbuf[2];
+int cbuf;
 
 FILE * fp;
 
@@ -15,78 +16,76 @@ int init_scan(char *filename){
   if(fp = fopen(filename,"r") == NULL){
     return -1;
   }
+
+  cbuf = fgetc(fp);
   return 0;
 }
 
 int scan(void){
-  getNewchar();
-  if(getNewchar() == -1){
-    return -1;
+  while(1){
+    if(cbuf == ' ' || cbuf == '\t'){
+      cbuf = fgetc(fp);
+      continue;
+    }else if(isAlpha(cbuf)){
+      int i=0;
+      while(isAlpha(cbuf)){
+        string_attr[i] = cbuf;
+        cbuf = fgetc(fp);
+        if(!isAlpha(cbuf) || !isNumber(cbuf)){
+          break;
+        }
+      }
+
+    }else if(isNumber(cbuf)){
+      while(isNumber(cbuf)){
+        cbuf = fgetc(fp);
+      }
+    }else if(cbuf == '/'){
+      cbuf = fgetc(fp);
+      if(cbuf != '*'){
+        return -1;
+      }
+      while(cbuf != '*'){
+        cbuf = fgetc(fp);
+      }
+
+    }else if(cbuf == '{'){
+      while(cbuf != '}'){
+        cbuf = fgetc(fp);
+      }
+    }else if(isSymbol(cbuf)>0){
+      
+    }
   }
-  
 }
+
+
 
 //for scan() functions
 
-int isSeparator(void){
-
-}
-
-int isSymbol(void){
-  switch(cbuf[0]){
-    case '+': return TPLUS;
-    case '-': return TMINUS;
-    case '*': return TSTAR;
-    case '=': return TEQUAL;
-    case '<': if(getNewchar() != 0){
-        if(cbuf[1] == '>'){
-          getNewchar();
-          return TNOTEQ;
-        }else if(cbuf[1] == '='){
-          getNewchar();
-          return TLEEQ;
-        }else{
-          return TLE;
-        }
-      }
-    case '>': if(getNewchar() != 0){
-        if(cbuf[1] == '='){
-          getNewchar();
-          return TGREQ;
-        }else{
-          return TGR;
-        }
-      }
-    case '(': return TLPAREN;
-    case ')': return TRPAREN;
-    case '[': return TLSQPAREN;
-    case ']': return TRSQPAREN;
-    case '.': return TDOT;
-    case ',': return TCOMMA;
-    case ':': if(getNewchar() != 0){
-        if(cbuf[1] == '='){
-          getNewchar();
-          return TASSIGN;
-        }else{
-          return TCOLON;
-        }
-      }
-    case ';': return TSEMI;
-    default : return -1;
+int isAlpha(int c){
+  if((c>='a' && c<='z') || (c>='A' && c<='Z')){
+    return 1;
+  }else{
+    return 0;
   }
 }
 
-int getNewchar(void){
-  cbuf[0] = cbuf[1];
-  if(cbuf[0] == EOF){
-    return -1;
+int isNumber(int c){
+  if(c>='0' && c<='9'){
+    return 1;
+  }else{
+    return 0;
   }
-  cbuf[1] = fgetc(fp);
-  return 0;
 }
+
+int isSymbol(int c){
+  
+}
+
 
 int get_linenum(void){
-
+  return 0;
 }
 
 void end_scan(void){
