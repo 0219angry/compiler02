@@ -80,7 +80,43 @@ int isNumber(int c){
 }
 
 int isSymbol(int c){
-  
+  switch(c){
+    case '+': return TPLUS;
+    case '-': return TMINUS;
+    case '*': return TSTAR;
+    case '=': return TEQUAL;
+    case '(': return TLPAREN;
+    case ')': return TRPAREN;
+    case '[': return TLSQPAREN;
+    case ']': return TRSQPAREN;
+    case '.': return TDOT;
+    case ',': return TCOMMA;
+    case ';': return TSEMI;
+    case '<':
+      cbuf = fgetc(fp); 
+      if(cbuf == '>'){
+        return TNOTEQ;
+      }else if(cbuf == '='){
+        return TLEEQ;
+      }else{
+        return TLE;
+      }
+    case '>': 
+      cbuf = fgetc(fp);
+      if(cbuf == '='){
+        return TGREQ;
+      }else{
+        return TGR;
+      }
+    case ':': return ;
+      cbuf = fgetc(fp);
+      if(cbuf == '='){
+        return TASSIGN;
+      }else{
+        return TCOLON;
+      }
+    default : return -1;
+  }
 }
 
 
