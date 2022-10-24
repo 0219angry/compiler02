@@ -64,6 +64,7 @@ int scan(void){
     }
     string_attr[i] = '\0';
     num_attr = atoi(string_attr);
+    return TINTEGER;
   }else if(cbuf == '/'){
     cbuf = fgetc(fp);
     if(cbuf != '*'){
