@@ -3,12 +3,14 @@
 int isAlpha(int c);
 int isNumber(int c);
 int isSymbol(int c);
-int getNewchar(void);
+int getNewchar_without_EOL(void);
 
 int num_attr;
 char string_attr[MAXSTRSIZE];
 
 int cbuf;
+int tokenbuf;
+int line;
 
 FILE * fp;
 
@@ -18,50 +20,130 @@ int init_scan(char *filename){
   }
 
   cbuf = fgetc(fp);
+  line = 0;
   return 0;
-}
+  }
 
 int scan(void){
-  while(1){
-    if(cbuf == ' ' || cbuf == '\t'){
+  if(cbuf == ' ' || cbuf == '\t'){
+    cbuf = fgetc(fp);
+    return 0;
+  }else if(cbuf == '\n'){
+    line++;
+    cbuf = fgetc(fp);
+    if(cbuf == '\r'){
       cbuf = fgetc(fp);
-      continue;
-    }else if(isAlpha(cbuf)){
-      int i=0;
-      while(isAlpha(cbuf)){
-        string_attr[i] = cbuf;
-        cbuf = fgetc(fp);
-        if(!isAlpha(cbuf) || !isNumber(cbuf)){
-          break;
-        }
-      }
-
-    }else if(isNumber(cbuf)){
-      while(isNumber(cbuf)){
-        cbuf = fgetc(fp);
-      }
-    }else if(cbuf == '/'){
+    }
+  }else if(cbuf == '\r'){
+    line++;
+    cbuf = fgetc(fp);
+    if(cbuf == '\n'){
       cbuf = fgetc(fp);
-      if(cbuf != '*'){
+    }
+  }else if(isAlpha(cbuf)){
+    int i=0;
+    while(isAlpha(cbuf)){
+      string_attr[i] = cbuf;
+      i++;
+      cbuf = fgetc(fp);
+      if(!isAlpha(cbuf) || !isNumber(cbuf)){
+        string_attr[i] = '\0';
+        break;
+      }
+      if(i > MAXSTRSIZE){
         return -1;
       }
-      while(cbuf != '*'){
-        cbuf = fgetc(fp);
-      }
-
-    }else if(cbuf == '{'){
-      while(cbuf != '}'){
-        cbuf = fgetc(fp);
-      }
-    }else if(isSymbol(cbuf)>0){
-      
+      return isKeyword;
     }
+  }else if(isNumber(cbuf)){
+    int i=0;
+    while(isNumber(cbuf)){
+      string_attr[i] = cbuf;
+      cbuf = fgetc(fp);
+      i++;
+    }
+    string_attr[i] = '\0';
+    num_attr = atoi(string_attr);
+  }else if(cbuf == '/'){
+    cbuf = fgetc(fp);
+    if(cbuf != '*'){
+      return -1;
+    }
+    while(cbuf != '*'){
+      if(cbuf == EOF){
+        return -1;
+      }
+      cbuf = fgetc(fp);
+    }
+    cbuf = fgetc(fp);
+    if(cbuf != '/'){
+      return -1;
+    }
+    cbuf = fgetc(fp);
+
+  }else if(cbuf == '{'){
+    while(cbuf != '}'){
+      if(cbuf == EOF){
+        return -1;
+      }
+      getNewchar_without_EOL();
+    }
+  }else if(cbuf == '\''){
+    while(1){
+      int i=0;
+      cbuf = fgetc(fp);
+      if(cbuf == EOF){
+        return -1;
+      }else if(cbuf == '\n'){
+        return -1;
+      }
+      if(cbuf == '\''){
+        cbuf = fgetc(fp);
+        if(cbuf == '\''){
+          string_attr[i] = '\'';
+          i++;
+          string_attr[i] = '\'';
+          i++;
+        }else{
+          string_attr[i] = '\0';
+          return TSTRING;
+        }
+        string_attr[i] = cbuf;
+        cbuf = fgetc(fp);
+        i++;
+      }
+    }
+  }else if((tokenbuf = isSymbol(cbuf))>0){
+    if(tokenbuf == TLE || tokenbuf == TGR || tokenbuf == TCOLON){
+
+    }else{
+      cbuf = fgetc(fp);
+    }
+    return tokenbuf;
   }
 }
 
 
 
+
 //for scan() functions
+
+int getNewchar_without_EOL(void){
+  cbuf = fgetc(fp);
+  if(cbuf == '\r'){
+    cbuf = fgetc(fp);
+    line++;
+    if(cbuf == '\n'){
+      cbuf = fgetc(fp);
+    }
+  }else if(cbuf == '\n'){
+    cbuf = fgetc(fp);
+    if(cbuf == '\r'){
+      cbuf = fgetc(fp);
+    }
+  }
+}
+
 
 int isAlpha(int c){
   if((c>='a' && c<='z') || (c>='A' && c<='Z')){
@@ -117,6 +199,15 @@ int isSymbol(int c){
       }
     default : return -1;
   }
+}
+
+int isKeyword(void){
+  for(int i=0;i<KEYWORDSIZE;i++){
+    if(strcmp(string_attr,key[i].keyword) == 0){
+      return key[i].keytoken;
+    }
+  }
+  return TNAME;
 }
 
 
