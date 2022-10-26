@@ -46,7 +46,7 @@ char *tokenstr[NUMOFTOKEN+1] = {
 };
 
 int main(int nc, char *np[]) {
-	int token, i;
+	int token;
   char message[MAXSTRSIZE];
 
   if(nc < 2) {
@@ -66,7 +66,7 @@ int main(int nc, char *np[]) {
 	  numtoken[token]++;
   }
   if(token == -1){
-    sprintf(message,"Lexical Error line %d\n",get_linenum());
+    sprintf(message,"Lexical Error in line %d\n",get_linenum());
     error(message);
   }
   end_scan();

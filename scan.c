@@ -3,7 +3,8 @@
 int isAlpha(int c);
 int isNumber(int c);
 int isSymbol(int c);
-int getNewchar_without_EOL(void);
+int isKeyword(void);
+void getNewchar_without_EOL(void);
 
 int num_attr;
 char string_attr[MAXSTRSIZE];
@@ -15,12 +16,13 @@ int line;
 FILE * fp;
 
 int init_scan(char *filename){
-  if(fp = fopen(filename,"r") == NULL){
+  if((fp = fopen(filename,"r")) == NULL){
     return -1;
   }
-
   cbuf = fgetc(fp);
+  printf("%c\n",cbuf);
   line = 0;
+  printf("file open success\n");
   return 0;
 }
 
@@ -55,7 +57,7 @@ int scan(void){
       if(i > MAXSTRSIZE){
         return -1;
       }
-      return isKeyword;
+      return isKeyword();
     }
   }else if(isNumber(cbuf)){
     int i=0;
@@ -124,6 +126,7 @@ int scan(void){
     }
     return tokenbuf;
   }
+  return -1;
 }
 
 
@@ -131,7 +134,7 @@ int scan(void){
 
 //for scan() functions
 
-int getNewchar_without_EOL(void){
+void getNewchar_without_EOL(void){
   cbuf = fgetc(fp);
   if(cbuf == '\r'){
     cbuf = fgetc(fp);
@@ -193,7 +196,7 @@ int isSymbol(int c){
       }else{
         return TGR;
       }
-    case ':': return ;
+    case ':':
       cbuf = fgetc(fp);
       if(cbuf == '='){
         return TASSIGN;
