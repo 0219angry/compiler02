@@ -22,7 +22,9 @@ int init_scan(char *filename){
   cbuf = fgetc(fp);
   line = 0;
   return 0;
-  }
+}
+
+
 
 int scan(void){
   if(cbuf == ' ' || cbuf == '\t'){
@@ -213,9 +215,9 @@ int isKeyword(void){
 
 
 int get_linenum(void){
-  return 0;
+  return line;
 }
 
 void end_scan(void){
-
+  fclose(fp);
 }

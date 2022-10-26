@@ -47,6 +47,7 @@ char *tokenstr[NUMOFTOKEN+1] = {
 
 int main(int nc, char *np[]) {
 	int token, i;
+  char message[MAXSTRSIZE];
 
   if(nc < 2) {
 	  printf("File name id not given.\n");
@@ -61,10 +62,22 @@ int main(int nc, char *np[]) {
     numtoken[i] = 0;
   }
   while((token = scan()) >= 0) {
-	/* 作成する部分：トークンをカウントする */
+    /* 作成する部分：トークンをカウントする */
+	  numtoken[token]++;
+  }
+  if(token == -1){
+    sprintf(message,"Lexical Error line %d\n",get_linenum());
+    error(message);
   }
   end_scan();
     /* 作成する部分:カウントした結果を出力する */
+
+  for(int i=1;i<NUMOFTOKEN;i++){
+    if(numtoken[i]>0){
+      printf("\"%s\"\t%d\n",tokenstr[i],numtoken[i]);
+    }
+  }
+
   return 0;
 }
 
