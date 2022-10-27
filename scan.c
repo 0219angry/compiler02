@@ -1,5 +1,7 @@
 #include "token-list.h"
 
+void init_attr(void);
+
 int isAlpha(int c);
 int isNumber(int c);
 int isSymbol(int c);
@@ -21,14 +23,22 @@ int init_scan(char *filename){
   }
   cbuf = fgetc(fp);
   printf("%c\n",cbuf);
-  line = 0;
+  line = 1;
   printf("file open success\n");
+  init_attr();
   return 0;
 }
 
-
+void init_attr(void){
+  num_attr = 0;
+  for(int i=0;i<MAXSTRSIZE;i++){
+    string_attr[i] = '\0';
+  }
+}
 
 int scan(void){
+  init_attr();
+  printf("%c",cbuf);
   if(cbuf == ' ' || cbuf == '\t'){
     cbuf = fgetc(fp);
     return 0;
@@ -46,19 +56,19 @@ int scan(void){
     }
   }else if(isAlpha(cbuf)){
     int i=0;
-    while(isAlpha(cbuf)){
+    while(isAlpha(cbuf) || isNumber(cbuf)){
       string_attr[i] = cbuf;
       i++;
       cbuf = fgetc(fp);
-      if(!isAlpha(cbuf) || !isNumber(cbuf)){
+      if(!isAlpha(cbuf) && !isNumber(cbuf)){
         string_attr[i] = '\0';
         break;
       }
       if(i > MAXSTRSIZE){
         return -1;
-      }
-      return isKeyword();
+      } 
     }
+    return isKeyword();
   }else if(isNumber(cbuf)){
     int i=0;
     while(isNumber(cbuf)){
