@@ -64,12 +64,13 @@ int main(int nc, char *np[]) {
 
   while((token = scan()) >= 0) {
     /* 作成する部分：トークンをカウントする */
-    printf("%d: %d\n",get_linenum(),token);
 	  numtoken[token]++;
+    printf("Line %d : %s\n", get_linenum(),tokenstr[token]);
   }
   if(token == -1){
     sprintf(message,"Lexical Error in line %d\n",get_linenum());
     error(message);
+    return -1;
   }
   end_scan();
     /* 作成する部分:カウントした結果を出力する */

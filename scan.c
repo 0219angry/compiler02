@@ -22,9 +22,7 @@ int init_scan(char *filename){
     return -1;
   }
   cbuf = fgetc(fp);
-  printf("%c\n",cbuf);
   line = 1;
-  printf("file open success\n");
   init_attr();
   return 0;
 }
@@ -38,7 +36,6 @@ void init_attr(void){
 
 int scan(void){
   init_attr();
-  printf("%c",cbuf);
   if(cbuf == ' ' || cbuf == '\t'){
     cbuf = fgetc(fp);
     return 0;
@@ -48,12 +45,14 @@ int scan(void){
     if(cbuf == '\r'){
       cbuf = fgetc(fp);
     }
+    return 0;
   }else if(cbuf == '\r'){
     line++;
     cbuf = fgetc(fp);
     if(cbuf == '\n'){
       cbuf = fgetc(fp);
     }
+    return 0;
   }else if(isAlpha(cbuf)){
     int i=0;
     while(isAlpha(cbuf) || isNumber(cbuf)){
@@ -81,21 +80,27 @@ int scan(void){
     return TINTEGER;
   }else if(cbuf == '/'){
     cbuf = fgetc(fp);
+    printf("%c",cbuf);
     if(cbuf != '*'){
       return -1;
     }
-    while(cbuf != '*'){
-      if(cbuf == EOF){
+    cbuf = fgetc(fp);
+    while(1){
+      if(cbuf == '*'){
+        cbuf = fgetc(fp);
+        if(cbuf == '/'){  
+          cbuf = fgetc(fp);
+          return 0;
+        }else{
+          continue;
+        }
+      }else if(cbuf == EOF){
         return -1;
-      }
-      cbuf = fgetc(fp);
+      }else{
+        cbuf = fgetc(fp);
+        continue;
+      } 
     }
-    cbuf = fgetc(fp);
-    if(cbuf != '/'){
-      return -1;
-    }
-    cbuf = fgetc(fp);
-
   }else if(cbuf == '{'){
     while(cbuf != '}'){
       if(cbuf == EOF){
@@ -103,16 +108,17 @@ int scan(void){
       }
       getNewchar_without_EOL();
     }
+    cbuf = fgetc(fp);
+    return 0;
   }else if(cbuf == '\''){
+    int i=0;
+    cbuf = fgetc(fp);
     while(1){
-      int i=0;
-      cbuf = fgetc(fp);
       if(cbuf == EOF){
         return -1;
       }else if(cbuf == '\n'){
         return -1;
-      }
-      if(cbuf == '\''){
+      }else if(cbuf == '\''){
         cbuf = fgetc(fp);
         if(cbuf == '\''){
           string_attr[i] = '\'';
@@ -123,10 +129,10 @@ int scan(void){
           string_attr[i] = '\0';
           return TSTRING;
         }
-        string_attr[i] = cbuf;
-        cbuf = fgetc(fp);
-        i++;
       }
+      string_attr[i] = cbuf;
+      cbuf = fgetc(fp);
+      i++;
     }
   }else if((tokenbuf = isSymbol(cbuf))>0){
     if(tokenbuf == TLE || tokenbuf == TGR || tokenbuf == TCOLON){
@@ -135,6 +141,8 @@ int scan(void){
       cbuf = fgetc(fp);
     }
     return tokenbuf;
+  }else if(cbuf == EOF){
+    return -2;
   }
   return -1;
 }
