@@ -1,0 +1,254 @@
+        -:    0:Source:scan.c
+        -:    0:Graph:scan.gcno
+        -:    0:Data:scan.gcda
+        -:    0:Runs:8
+        -:    0:Source is newer than graph
+        -:    1:#include "token-list.h"
+        -:    2:
+        -:    3:void init_attr(void);
+        -:    4:
+        -:    5:int isAlpha(int c);
+        -:    6:int isNumber(int c);
+        -:    7:int isSymbol(int c);
+        -:    8:int isKeyword(void);
+        -:    9:void getNewchar_without_EOL(void);
+        -:   10:
+        -:   11:int num_attr;
+        -:   12:char string_attr[MAXSTRSIZE];
+        -:   13:
+        -:   14:int cbuf;
+        -:   15:int tokenbuf;
+        -:   16:int line;
+        -:   17:int current_line;
+        -:   18:
+        -:   19:FILE * fp;
+        -:   20:
+        8:   21:int init_scan(char *filename){
+        8:   22:  if((fp = fopen(filename,"r")) == NULL){
+        1:   23:    return -1;
+        -:   24:  }
+        7:   25:  cbuf = fgetc(fp);
+        7:   26:  line = 1;
+        7:   27:  init_attr();
+        7:   28:  return 0;
+        -:   29:}
+        -:   30:
+      205:   31:void init_attr(void){
+      205:   32:  num_attr = 0;
+   210125:   33:  for(int i=0;i<MAXSTRSIZE;i++){
+   209920:   34:    string_attr[i] = '\0';
+        -:   35:  }
+      205:   36:}
+        -:   37:
+      198:   38:int scan(void){
+      198:   39:  current_line = line;
+      198:   40:  init_attr();
+      198:   41:  if(cbuf == ' ' || cbuf == '\t'){
+       70:   42:    cbuf = fgetc(fp);
+       70:   43:    return 0;
+      128:   44:  }else if(cbuf == '\n'){
+        7:   45:    line++;
+        7:   46:    cbuf = fgetc(fp);
+        7:   47:    if(cbuf == '\r'){
+    #####:   48:      cbuf = fgetc(fp);
+        -:   49:    }
+        7:   50:    return 0;
+      121:   51:  }else if(cbuf == '\r'){
+       14:   52:    line++;
+       14:   53:    cbuf = fgetc(fp);
+       14:   54:    if(cbuf == '\n'){
+       14:   55:      cbuf = fgetc(fp);
+        -:   56:    }
+       14:   57:    return 0;
+      107:   58:  }else if(isAlpha(cbuf)){
+       39:   59:    int i=0;
+    1188*:   60:    while(isAlpha(cbuf) || isNumber(cbuf)){
+     1188:   61:      string_attr[i] = cbuf;
+     1188:   62:      i++;
+     1188:   63:      cbuf = fgetc(fp);
+     1188:   64:      if(!isAlpha(cbuf) && !isNumber(cbuf)){
+       38:   65:        string_attr[i] = '\0';
+       38:   66:        break;
+        -:   67:      }
+     1150:   68:      if(i > MAXSTRSIZE){
+        1:   69:        return -1;
+        -:   70:      } 
+        -:   71:    }
+       38:   72:    return isKeyword();
+       68:   73:  }else if(isNumber(cbuf)){
+       23:   74:    int i=0;
+       58:   75:    while(isNumber(cbuf)){
+       35:   76:      string_attr[i] = cbuf;
+       35:   77:      cbuf = fgetc(fp);
+       35:   78:      i++;
+        -:   79:    }
+       23:   80:    string_attr[i] = '\0';
+       23:   81:    num_attr = atoi(string_attr);
+       23:   82:    if(num_attr > 32766){
+        1:   83:      return -1;
+        -:   84:    }
+       22:   85:    return TINTEGER;
+       45:   86:  }else if(cbuf == '/'){
+        5:   87:    cbuf = fgetc(fp);
+        5:   88:    if(cbuf != '*'){
+        1:   89:      return -1;
+        -:   90:    }
+        4:   91:    cbuf = fgetc(fp);
+        -:   92:    while(1){
+       54:   93:      if(cbuf == '*'){
+        4:   94:        cbuf = fgetc(fp);
+        4:   95:        if(cbuf == '/'){  
+        3:   96:          cbuf = fgetc(fp);
+        3:   97:          return 0;
+        -:   98:        }else{
+        1:   99:          continue;
+        -:  100:        }
+       50:  101:      }else if(cbuf == EOF){
+        1:  102:        return -1;
+        -:  103:      }else{
+       49:  104:        getNewchar_without_EOL();
+       49:  105:        continue;
+        -:  106:      } 
+        -:  107:    }
+       40:  108:  }else if(cbuf == '{'){
+       30:  109:    while(cbuf != '}'){
+       29:  110:      if(cbuf == EOF){
+        1:  111:        return -1;
+        -:  112:      }
+       28:  113:      getNewchar_without_EOL();
+        -:  114:    }
+        1:  115:    cbuf = fgetc(fp);
+        1:  116:    return 0;
+       38:  117:  }else if(cbuf == '\''){
+        5:  118:    int i=0;
+        5:  119:    cbuf = fgetc(fp);
+        -:  120:    while(1){
+       51:  121:      if(i > MAXSTRSIZE){
+    #####:  122:        return -1;
+        -:  123:      }
+       51:  124:      if(cbuf == EOF){
+    #####:  125:        return -1;
+       51:  126:      }else if(cbuf == '\n'){
+        1:  127:        return -1;
+       50:  128:      }else if(cbuf == '\''){
+       19:  129:        cbuf = fgetc(fp);
+       19:  130:        if(cbuf == '\''){
+       15:  131:          string_attr[i] = '\'';
+       15:  132:          i++;
+       15:  133:          string_attr[i] = '\'';
+       15:  134:          i++;
+        -:  135:        }else{
+        4:  136:          string_attr[i] = '\0';
+        4:  137:          return TSTRING;
+        -:  138:        }
+        -:  139:      }
+       46:  140:      string_attr[i] = cbuf;
+       46:  141:      cbuf = fgetc(fp);
+       46:  142:      i++;
+        -:  143:    }
+       33:  144:  }else if((tokenbuf = isSymbol(cbuf))>0){
+       32:  145:    if(!(tokenbuf == TLE || tokenbuf == TGR || tokenbuf == TCOLON)){
+       29:  146:      cbuf = fgetc(fp);   
+        -:  147:    }
+       32:  148:    return tokenbuf;
+        1:  149:  }else if(cbuf == EOF){
+        1:  150:    return -2;
+        -:  151:  }
+    #####:  152:  return -1;
+        -:  153:}
+        -:  154:
+        -:  155:
+        -:  156:
+        -:  157:
+        -:  158://for scan() functions
+        -:  159:
+       77:  160:void getNewchar_without_EOL(void){
+       77:  161:  cbuf = fgetc(fp);
+       77:  162:  if(cbuf == '\r'){
+    #####:  163:    cbuf = fgetc(fp);
+    #####:  164:    line++;
+    #####:  165:    if(cbuf == '\n'){
+    #####:  166:      cbuf = fgetc(fp);
+        -:  167:    }
+       77:  168:  }else if(cbuf == '\n'){
+    #####:  169:    cbuf = fgetc(fp);
+    #####:  170:    if(cbuf == '\r'){
+    #####:  171:      cbuf = fgetc(fp);
+        -:  172:    }
+        -:  173:  }
+       77:  174:}
+        -:  175:
+        -:  176:
+     2483:  177:int isAlpha(int c){
+     2483:  178:  if((c>='a' && c<='z') || (c>='A' && c<='Z')){
+     2377:  179:    return 1;
+        -:  180:  }else{
+      106:  181:    return 0;
+        -:  182:  }
+        -:  183:}
+        -:  184:
+      164:  185:int isNumber(int c){
+      164:  186:  if(c>='0' && c<='9'){
+       58:  187:    return 1;
+        -:  188:  }else{
+      106:  189:    return 0;
+        -:  190:  }
+        -:  191:}
+        -:  192:
+       33:  193:int isSymbol(int c){
+       33:  194:  switch(c){
+        1:  195:    case '+': return TPLUS;
+       11:  196:    case '-': return TMINUS;
+        1:  197:    case '*': return TSTAR;
+        2:  198:    case '=': return TEQUAL;
+        1:  199:    case '(': return TLPAREN;
+        1:  200:    case ')': return TRPAREN;
+        1:  201:    case '[': return TLSQPAREN;
+        1:  202:    case ']': return TRSQPAREN;
+        1:  203:    case '.': return TDOT;
+        1:  204:    case ',': return TCOMMA;
+        2:  205:    case ';': return TSEMI;
+        4:  206:    case '<':
+        4:  207:      cbuf = fgetc(fp); 
+        4:  208:      if(cbuf == '>'){
+        1:  209:        return TNOTEQ;
+        3:  210:      }else if(cbuf == '='){
+        2:  211:        return TLEEQ;
+        -:  212:      }else{
+        1:  213:        return TLE;
+        -:  214:      }
+        2:  215:    case '>': 
+        2:  216:      cbuf = fgetc(fp);
+        2:  217:      if(cbuf == '='){
+        1:  218:        return TGREQ;
+        -:  219:      }else{
+        1:  220:        return TGR;
+        -:  221:      }
+        3:  222:    case ':':
+        3:  223:      cbuf = fgetc(fp);
+        3:  224:      if(cbuf == '='){
+        2:  225:        return TASSIGN;
+        -:  226:      }else{
+        1:  227:        return TCOLON;
+        -:  228:      }
+        1:  229:    default : return -1;
+        -:  230:  }
+        -:  231:}
+        -:  232:
+       38:  233:int isKeyword(void){
+      662:  234:  for(int i=0;i<KEYWORDSIZE;i++){
+      654:  235:    if(strcmp(string_attr,key[i].keyword) == 0){
+       30:  236:      return key[i].keytoken;
+        -:  237:    }
+        -:  238:  }
+        8:  239:  return TNAME;
+        -:  240:}
+        -:  241:
+        -:  242:
+      196:  243:int get_linenum(void){
+      196:  244:  return current_line;
+        -:  245:}
+        -:  246:
+        7:  247:void end_scan(void){
+        7:  248:  fclose(fp);
+        7:  249:}

@@ -14,6 +14,7 @@ char string_attr[MAXSTRSIZE];
 int cbuf;
 int tokenbuf;
 int line;
+int current_line;
 
 FILE * fp;
 
@@ -35,6 +36,7 @@ void init_attr(void){
 }
 
 int scan(void){
+  current_line = line;
   init_attr();
   if(cbuf == ' ' || cbuf == '\t'){
     cbuf = fgetc(fp);
@@ -77,10 +79,12 @@ int scan(void){
     }
     string_attr[i] = '\0';
     num_attr = atoi(string_attr);
+    if(num_attr > 32766){
+      return -1;
+    }
     return TINTEGER;
   }else if(cbuf == '/'){
     cbuf = fgetc(fp);
-    printf("%c",cbuf);
     if(cbuf != '*'){
       return -1;
     }
@@ -97,7 +101,7 @@ int scan(void){
       }else if(cbuf == EOF){
         return -1;
       }else{
-        cbuf = fgetc(fp);
+        getNewchar_without_EOL();
         continue;
       } 
     }
@@ -114,6 +118,9 @@ int scan(void){
     int i=0;
     cbuf = fgetc(fp);
     while(1){
+      if(i > MAXSTRSIZE){
+        return -1;
+      }
       if(cbuf == EOF){
         return -1;
       }else if(cbuf == '\n'){
@@ -135,10 +142,8 @@ int scan(void){
       i++;
     }
   }else if((tokenbuf = isSymbol(cbuf))>0){
-    if(tokenbuf == TLE || tokenbuf == TGR || tokenbuf == TCOLON){
-
-    }else{
-      cbuf = fgetc(fp);
+    if(!(tokenbuf == TLE || tokenbuf == TGR || tokenbuf == TCOLON)){
+      cbuf = fgetc(fp);   
     }
     return tokenbuf;
   }else if(cbuf == EOF){
@@ -236,7 +241,7 @@ int isKeyword(void){
 
 
 int get_linenum(void){
-  return line;
+  return current_line;
 }
 
 void end_scan(void){

@@ -1,7 +1,7 @@
 # (1)コンパイラ
 CC  = gcc
 # (2)コンパイルオプション
-CFLAGS    = -Wall
+CFLAGS    = -Wall --coverage -fstack-protector
 # (3)実行ファイル名
 TARGET  = token-list
 # (4)コンパイル対象のソースコード
@@ -19,9 +19,11 @@ LIBDIR  =
 # (8)追加するライブラリファイル
 LIBS    = 
 
+LFLAGS	= -lgcov --coverage
+
 # (9)ターゲットファイル生成
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LIBDIR) $(LIBS)
+	$(CC) -o $@ $(LFLAGS) $^ $(LIBDIR) $(LIBS)
 	
 # (10)オブジェクトファイル生成
 $(OBJS): $(SRCS)

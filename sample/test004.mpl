@@ -1,0 +1,2 @@
+{ comment }
+{ ERROR in comment
