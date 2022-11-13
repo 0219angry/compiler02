@@ -67,11 +67,16 @@ extern struct KEY {
 	int keytoken;
 } key[KEYWORDSIZE];
 
-extern void error(char *mes);
+extern int error(char *mes);
+
+/* parse.c */
+#define NORMAL 0
+#define ERROR 1
 
 /* scan.c */
 extern int init_scan(char *filename);
 extern int scan(void);
+extern int Scan(void);
 extern int num_attr;
 extern char string_attr[MAXSTRSIZE];
 extern int get_linenum(void);

@@ -247,3 +247,13 @@ int get_linenum(void){
 void end_scan(void){
   fclose(fp);
 }
+
+int Scan(void){
+  int tbuf;
+  for(;;){
+    tbuf = scan();
+    if(tbuf != 0){
+      return tbuf;
+    }
+  }
+}
