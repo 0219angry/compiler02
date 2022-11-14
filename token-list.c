@@ -1,5 +1,6 @@
 ﻿#include "token-list.h"
 
+
 /* keyword list */
 struct KEY key[KEYWORDSIZE] = {
 	{"and", 	TAND	},
@@ -45,9 +46,9 @@ char *tokenstr[NUMOFTOKEN+1] = {
 	">=", "(", ")", "[", "]", ":=", ".", ",", ":", ";", "read","write", "break"
 };
 
+int token;
+
 int main(int nc, char *np[]) {
-	int token;
-  char message[MAXSTRSIZE];
 
   if(nc < 2) {
 	  printf("File name id not given.\n");
@@ -57,29 +58,11 @@ int main(int nc, char *np[]) {
 	  printf("File %s can not open.\n", np[1]);
 	  return 0;
   }
-  /* 作成する部分：トークンカウント用の配列？を初期化する */
-  for(int i=0;i<NUMOFTOKEN+1;i++){
-    numtoken[i] = 0;
-  }
 
-  while((token = scan()) >= 0) {
-    /* 作成する部分：トークンをカウントする */
-	  numtoken[token]++;
-    printf("Line %d : %s\n", get_linenum(),tokenstr[token]);
-  }
-  if(token == -1){
-    sprintf(message,"Lexical Error in line %d\n",get_linenum());
-    error(message);
-    return -1;
-  }
+  /* 構文解析を行う */
+  token = Scan();
+  parse_program();
   end_scan();
-    /* 作成する部分:カウントした結果を出力する */
-
-  for(int i=1;i<NUMOFTOKEN;i++){
-    if(numtoken[i]>0){
-      printf("\"%s\"\t%d\n",tokenstr[i],numtoken[i]);
-    }
-  }
 
   return 0;
 }

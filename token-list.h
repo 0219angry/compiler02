@@ -73,6 +73,8 @@ extern int error(char *mes);
 #define NORMAL 0
 #define ERROR 1
 
+extern int parse_program();
+
 /* scan.c */
 extern int init_scan(char *filename);
 extern int scan(void);

@@ -82,7 +82,7 @@ int scan(void){
     if(num_attr > 32766){
       return -1;
     }
-    return TINTEGER;
+    return TNUMBER;
   }else if(cbuf == '/'){
     cbuf = fgetc(fp);
     if(cbuf != '*'){
@@ -247,13 +247,20 @@ int get_linenum(void){
 void end_scan(void){
   fclose(fp);
 }
-
+/* Error処理機能+空白文字処理機能付きscan() */
 int Scan(void){
   int tbuf;
   for(;;){
     tbuf = scan();
     if(tbuf != 0){
+      if(tbuf == -1){
+        char message[MAXSTRSIZE];
+        sprintf(message,"Lexical Error in line %d\n",get_linenum());
+        return error(message);
+        
+      }
       return tbuf;
     }
   }
 }
+
