@@ -30,6 +30,7 @@ int parse_program(void){
   if(token != TDOT) return(error("Period is not found at the end of program"));
   printf("%s" ,token_str[token]);
   token = Scan();
+  indent_count--;
   print_indent(indent_count);
   return(NORMAL);
 }
@@ -44,6 +45,7 @@ int parse_block(void){
       return(error("Block is not found"));
     }
   }
+  indent_count--;
   if(parse_compound_statement() == ERROR) return(ERROR);
   return(NORMAL);
 }
@@ -52,7 +54,6 @@ int parse_variable_declaration(void){
   if(token != TVAR) return(error("Keyword 'var' is not found"));
   printf("%s" ,token_str[token]);
   indent_count++;
-  
   token = Scan();
   while(token == TNAME){
     print_indent(indent_count);
@@ -65,7 +66,6 @@ int parse_variable_declaration(void){
     printf("%s" ,token_str[token]);
     token = Scan();
   }
-  indent_count--;
   print_indent(indent_count);
   return(NORMAL);
 }
