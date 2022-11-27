@@ -61,7 +61,7 @@ int main(int nc, char *np[]) {
 
   /* 構文解析を行う */
   token = Scan();
-  parse_program();
+  if(parse_program() == ERROR) return -1;
   end_scan();
 
   return 0;

@@ -271,7 +271,6 @@ int parse_condition_statement(void){
     print_indent(indent_count);
     if(parse_statement() == ERROR) return(ERROR);
     indent_count--;
-    print_indent(indent_count);
   }
   return(NORMAL);
 }

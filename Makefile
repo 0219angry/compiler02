@@ -2,7 +2,7 @@
 CC  = gcc
 # (2)コンパイルオプション
 CFLAGS    = -Wall 
-# CFLAGS		+= --coverage -fstack-protector
+CFLAGS		+= --coverage -fstack-protector
 # (3)実行ファイル名
 TARGET  = token-list
 # (4)コンパイル対象のソースコード

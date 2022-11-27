@@ -1,0 +1,1 @@
+program var	x, y : integer;

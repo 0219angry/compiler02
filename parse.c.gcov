@@ -1,0 +1,626 @@
+        -:    0:Source:parse.c
+        -:    0:Graph:parse.gcno
+        -:    0:Data:parse.gcda
+        -:    0:Runs:5
+        -:    1:#include "token-list.h"
+        -:    2:#include "parse.h"
+        -:    3:
+        -:    4:char *token_str[NUMOFTOKEN+1] = {
+        -:    5:	"",
+        -:    6:	"NAME", "program", "var", "array", "of", "begin", "end", "if", "then",
+        -:    7:	 "else", "procedure", "return", "call", "while", "do", "not", "or", 
+        -:    8:	"div", "and", "char", "integer", "boolean", "readln", "writeln", "true",
+        -:    9:	 "false", "NUMBER", "STRING", "+", "-", "*", "=", "<>", "<", "<=", ">", 
+        -:   10:	">=", "(", ")", "[", "]", ":=", ".", ",", ":", ";", "read","write", "break"
+        -:   11:};
+        -:   12:
+        -:   13:extern int token;
+        -:   14:int indent_count;
+        -:   15:
+        5:   16:int parse_program(void){
+        5:   17:  indent_count = 0;
+        5:   18:  if(token != TPROGRAM) return(error("Keyword 'program' is not found"));
+        3:   19:  printf("%s ",token_str[token]);
+        3:   20:  token = Scan();
+        3:   21:  if(token != TNAME) return(error("Promgram name is not found"));
+        2:   22:  printf("%s", string_attr);
+        2:   23:  token = Scan();
+        2:   24:  if(token != TSEMI) return(error("Semicolon is not found"));
+        1:   25:  printf("%s" ,token_str[token]);
+        1:   26:  indent_count++;
+        1:   27:  print_indent(indent_count);
+        1:   28:  token = Scan();
+       1*:   29:  if(parse_block() == ERROR) return(ERROR);
+        1:   30:  if(token != TDOT) return(error("Period is not found at the end of program"));
+    #####:   31:  printf("%s" ,token_str[token]);
+    #####:   32:  token = Scan();
+    #####:   33:  indent_count--;
+    #####:   34:  print_indent(indent_count);
+    #####:   35:  return(NORMAL);
+        -:   36:}
+        -:   37:
+        1:   38:int parse_block(void){
+        7:   39:  while(token == TVAR || token == TPROCEDURE){
+        6:   40:    if(token == TVAR){
+       3*:   41:      if(parse_variable_declaration() == ERROR) return(ERROR);
+        3:   42:    }else if(token == TPROCEDURE){
+       3*:   43:      if(parse_subprogram_declaration() == ERROR) return(ERROR);
+        -:   44:    }else{
+    #####:   45:      return(error("Block is not found"));
+        -:   46:    }
+        -:   47:  }
+        1:   48:  indent_count--;
+       1*:   49:  if(parse_compound_statement() == ERROR) return(ERROR);
+        1:   50:  return(NORMAL);
+        -:   51:}
+        -:   52:
+        3:   53:int parse_variable_declaration(void){
+       3*:   54:  if(token != TVAR) return(error("Keyword 'var' is not found"));
+        3:   55:  printf("%s" ,token_str[token]);
+        3:   56:  indent_count++;
+        3:   57:  token = Scan();
+        6:   58:  while(token == TNAME){
+        3:   59:    print_indent(indent_count);
+       3*:   60:    if(parse_variable_names() == ERROR) return(ERROR);
+       3*:   61:    if(token != TCOLON) return(error("Colon is not found"));
+        3:   62:    printf(" %s " ,token_str[token]);
+        3:   63:    token = Scan();
+       3*:   64:    if(parse_type() == ERROR) return(ERROR);
+       3*:   65:    if(token != TSEMI) return(error("Semicolon is not found"));
+        3:   66:    printf("%s" ,token_str[token]);
+        3:   67:    token = Scan();
+        -:   68:  }
+        3:   69:  print_indent(indent_count);
+        3:   70:  return(NORMAL);
+        -:   71:}
+        -:   72:
+        3:   73:int parse_variable_names(void){
+       3*:   74:  if(parse_variable_name() == ERROR) return(ERROR);
+        3:   75:  while(token == TCOMMA){
+    #####:   76:    printf(" %s " ,token_str[token]);
+        -:   77:    
+    #####:   78:    token = Scan();
+    #####:   79:    if(parse_variable_name() == ERROR) return(ERROR);
+        -:   80:  }
+        3:   81:  return(NORMAL);
+        -:   82:}
+        -:   83:
+       13:   84:int parse_variable_name(void){
+      13*:   85:  if(token != TNAME) return(error("Variable name is not found"));
+       13:   86:  printf("%s", string_attr);
+       13:   87:  token = Scan();
+       13:   88:  return(NORMAL);
+        -:   89:}
+        -:   90:
+        3:   91:int parse_type(void){
+        3:   92:  if(parse_standard_type() == NORMAL){
+        3:   93:    return(NORMAL);
+    #####:   94:  }else if(parse_array_type() == NORMAL){
+    #####:   95:    return(NORMAL);
+        -:   96:  }else{
+    #####:   97:    return(ERROR);
+        -:   98:  }
+        -:   99:}
+        -:  100:
+        3:  101:int parse_standard_type(void){
+        3:  102:  switch (token){
+        3:  103:  case TINTEGER:
+        3:  104:    printf("%s" ,token_str[token]);
+        3:  105:    token = Scan();
+        3:  106:    return(NORMAL);
+        -:  107:    break;
+    #####:  108:  case TBOOLEAN:
+    #####:  109:    printf("%s" ,token_str[token]);
+    #####:  110:    token = Scan();
+    #####:  111:    return(NORMAL);
+        -:  112:    break;
+    #####:  113:  case TCHAR:
+    #####:  114:    printf("%s" ,token_str[token]);
+    #####:  115:    token = Scan();
+    #####:  116:    return(NORMAL);
+        -:  117:    break;
+    #####:  118:  default:
+    #####:  119:    return(error("Standard type is not found"));
+        -:  120:    break;
+        -:  121:  }
+        -:  122:}
+        -:  123:
+    #####:  124:int parse_array_type(void){
+    #####:  125:  if(token != TARRAY) return(error("Keyword 'array' is not found"));
+    #####:  126:  printf("%s" ,token_str[token]);
+    #####:  127:  token = Scan();
+    #####:  128:  if(token != TLSQPAREN) return(error("Left squere parenthese is not found"));
+    #####:  129:  printf("%s" ,token_str[token]);
+    #####:  130:  token = Scan();
+    #####:  131:  if(token != TNUMBER) return(error("Unsigned integer is not found"));
+    #####:  132:  printf("%d" ,num_attr);
+    #####:  133:  token = Scan();
+    #####:  134:  if(token != TRSQPAREN) return(error("Left squere parenthese is not found"));
+    #####:  135:  printf("%s " ,token_str[token]);
+    #####:  136:  token = Scan();
+    #####:  137:  if(token != TOF) return(error("Keyword 'of' is not found"));
+    #####:  138:  printf("%s " ,token_str[token]);
+    #####:  139:  token = Scan();
+    #####:  140:  if(parse_standard_type() == ERROR) return(ERROR);
+    #####:  141:  return(NORMAL);
+        -:  142:}
+        -:  143:
+        3:  144:int parse_subprogram_declaration(void){
+        3:  145:  indent_count++;
+       3*:  146:  if(token !=TPROCEDURE) return(error("keyword 'procedure' is not found"));
+        3:  147:  printf("%s ",token_str[token]);
+        3:  148:  token = Scan();
+       3*:  149:  if(parse_procedure_name() == ERROR) return(ERROR);
+        3:  150:  if(token == TLPAREN){
+    #####:  151:    if(parse_formal_parameters() == ERROR) return(ERROR);
+        -:  152:  }
+       3*:  153:  if(token != TSEMI) return(error("Semicolon is not found"));
+        3:  154:  printf("%s",token_str[token]);
+        3:  155:  print_indent(indent_count);
+        3:  156:  token = Scan();
+        3:  157:  if(token == TVAR){
+    #####:  158:    if(parse_variable_declaration() == ERROR) return(ERROR);
+        -:  159:  }
+       3*:  160:  if(parse_compound_statement() == ERROR) return(ERROR);
+       3*:  161:  if(token != TSEMI) return(error("Semicolon is not found"));
+        3:  162:  printf("%s",token_str[token]);
+        3:  163:  token = Scan();
+        3:  164:  indent_count--;
+        3:  165:  print_indent(indent_count);
+        3:  166:  return(NORMAL);
+        -:  167:}
+        -:  168:
+        6:  169:int parse_procedure_name(void){
+       6*:  170:  if(token != TNAME) return(error("procedure name is not found"));
+        6:  171:  printf("%s",string_attr);
+        6:  172:  token = Scan();
+        6:  173:  return(NORMAL);
+        -:  174:}
+        -:  175:
+    #####:  176:int parse_formal_parameters(void){
+    #####:  177:  if(token != TLPAREN) return(error("Left parenthese is not found"));
+    #####:  178:  printf("%s ",token_str[token]);
+    #####:  179:  token = Scan();
+        -:  180:  while(1){
+    #####:  181:    if(parse_variable_names() == ERROR) return(ERROR);
+    #####:  182:    if(token != TCOLON) return(error("Colon is not found"));
+    #####:  183:    printf(" %s ",token_str[token]);
+    #####:  184:    token = Scan();
+    #####:  185:    if(parse_type() == ERROR) return(ERROR);
+    #####:  186:    if(token == TRPAREN) break;
+    #####:  187:    if(token != TSEMI) return(error("Semicolon is not found"));
+    #####:  188:    printf("%s ",token_str[token]);
+    #####:  189:    token = Scan();
+        -:  190:  }
+    #####:  191:  printf("%s",token_str[token]);
+    #####:  192:  token = Scan();
+    #####:  193:  return(NORMAL);
+        -:  194:}
+        -:  195:
+        5:  196:int parse_compound_statement(void){
+       5*:  197:  if(token != TBEGIN) return(error("Keyword 'begin' is not found"));
+        5:  198:  printf("%s",token_str[token]);
+        5:  199:  indent_count++;
+        5:  200:  print_indent(indent_count);
+        5:  201:  token = Scan();
+       5*:  202:  if(parse_statement() == ERROR) return(ERROR);
+       11:  203:  while(token == TSEMI){
+        6:  204:    printf("%s",token_str[token]);
+        6:  205:    print_indent(indent_count);
+        6:  206:    token = Scan();
+       6*:  207:    if(parse_statement() == ERROR) return(ERROR);
+        -:  208:  }
+        5:  209:  indent_count--;
+        5:  210:  print_indent(indent_count);
+       5*:  211:  if(token != TEND) return(error("Keyword 'end' is not found"));
+        5:  212:  printf("%s",token_str[token]);
+        5:  213:  token = Scan();
+        5:  214:  return(NORMAL);
+        -:  215:}
+        -:  216:
+       12:  217:int parse_statement(void){
+       12:  218:  switch(token){
+        3:  219:    case TNAME:
+       3*:  220:      if(parse_assignment_statement() == ERROR) return(ERROR);
+        3:  221:      break;
+    #####:  222:    case TIF:
+    #####:  223:      if(parse_condition_statement() == ERROR) return(ERROR);
+    #####:  224:      break;
+        1:  225:    case TWHILE:
+       1*:  226:      if(parse_iteration_statement() == ERROR) return(ERROR);
+        1:  227:      break;
+    #####:  228:    case TBREAK:
+    #####:  229:      if(parse_exit_statement() == ERROR) return(ERROR);
+    #####:  230:      break;
+        3:  231:    case TCALL:
+       3*:  232:      if(parse_call_statement() == ERROR) return(ERROR);
+        3:  233:      break;
+    #####:  234:    case TRETURN:
+    #####:  235:      if(parse_return_statement() == ERROR) return(ERROR);
+    #####:  236:      break;
+        2:  237:    case TREAD:
+        -:  238:    case TREADLN:
+       2*:  239:      if(parse_input_statement() == ERROR) return(ERROR);
+        2:  240:      break;
+        2:  241:    case TWRITE:
+        -:  242:    case TWRITELN:
+       2*:  243:      if(parse_output_statement() == ERROR) return(ERROR);
+        2:  244:      break;
+        1:  245:    case TBEGIN:
+       1*:  246:      if(parse_compound_statement() == ERROR) return(ERROR);
+        1:  247:      break;
+    #####:  248:    default:
+    #####:  249:      return(error("Statement is not found"));
+        -:  250:  }
+       12:  251:  return(NORMAL);
+        -:  252:}
+        -:  253:
+    #####:  254:int parse_condition_statement(void){
+    #####:  255:  if(token != TIF) return(error("Keyword 'if' is not found"));
+    #####:  256:  printf("%s ",token_str[token]);
+    #####:  257:  token = Scan();
+    #####:  258:  if(parse_expression() == ERROR) return(ERROR);
+    #####:  259:  if(token != TTHEN) return(error("Keyword 'then' is not found"));
+    #####:  260:  printf(" %s",token_str[token]);
+    #####:  261:  token = Scan();
+    #####:  262:  indent_count++;
+    #####:  263:  print_indent(indent_count);
+    #####:  264:  if(parse_statement() == ERROR) return(ERROR);
+    #####:  265:  indent_count--;
+    #####:  266:  print_indent(indent_count);
+    #####:  267:  if(token == TELSE){
+    #####:  268:    printf("%s",token_str[token]);
+    #####:  269:    token = Scan();
+    #####:  270:    indent_count++;
+    #####:  271:    print_indent(indent_count);
+    #####:  272:    if(parse_statement() == ERROR) return(ERROR);
+    #####:  273:    indent_count--;
+        -:  274:  }
+    #####:  275:  return(NORMAL);
+        -:  276:}
+        -:  277:
+        1:  278:int parse_iteration_statement(void){
+       1*:  279:  if(token != TWHILE) return(error("Keyword 'while' is not found"));
+        1:  280:  printf("%s ",token_str[token]);
+        1:  281:  token = Scan();
+       1*:  282:  if(parse_expression() == ERROR) return(ERROR);
+       1*:  283:  if(token != TDO) return(error("Keyword 'do' is not found"));
+        1:  284:  printf(" %s ",token_str[token]);
+        1:  285:  token = Scan();
+        1:  286:  indent_count++;
+        1:  287:  print_indent(indent_count);
+       1*:  288:  if(parse_statement() == ERROR) return(ERROR);
+        1:  289:  indent_count--;
+        1:  290:  return(NORMAL);
+        -:  291:}
+        -:  292:
+    #####:  293:int parse_exit_statement(void){
+    #####:  294:  if(token != TBREAK) return(error("Keyword 'break' is not found"));
+    #####:  295:  printf("%s",token_str[token]);
+    #####:  296:  token = Scan();
+    #####:  297:  return(NORMAL);
+        -:  298:}
+        -:  299:
+        3:  300:int parse_call_statement(void){
+       3*:  301:  if(token != TCALL) return(error("Keyword 'call' is not found"));
+        3:  302:  printf("%s ",token_str[token]);
+        3:  303:  token = Scan();
+       3*:  304:  if(parse_procedure_name() == ERROR) return(ERROR);
+        3:  305:  if(token == TLPAREN){
+    #####:  306:    printf("%s ",token_str[token]);
+    #####:  307:    token = Scan();
+    #####:  308:    if(parse_expressions() == ERROR) return(ERROR);
+    #####:  309:    if(token != TRPAREN) return(error("Right parenthese is not found"));
+    #####:  310:    printf(" %s",token_str[token]);
+    #####:  311:    token = Scan();
+        -:  312:  }
+        3:  313:  return(NORMAL);
+        -:  314:}
+        -:  315:
+    #####:  316:int parse_expressions(void){
+    #####:  317:  if(parse_expression() == ERROR) return(ERROR);
+    #####:  318:  while(token == TCOMMA){
+    #####:  319:      printf(" %s ",token_str[token]);
+    #####:  320:      token = Scan();
+    #####:  321:      if(parse_expression() == ERROR) return(ERROR);
+        -:  322:    }
+    #####:  323:    return(NORMAL);
+        -:  324:}
+        -:  325:
+    #####:  326:int parse_return_statement(void){
+    #####:  327:  if(token != TRETURN) return(error("Keyword 'return' is not found"));
+    #####:  328:  printf("%s",token_str[token]);
+    #####:  329:  token = Scan();
+    #####:  330:  print_indent(indent_count);
+    #####:  331:  return(NORMAL);
+        -:  332:}
+        -:  333:
+        3:  334:int parse_assignment_statement(void){
+       3*:  335:  if(parse_left_part() == ERROR) return(ERROR);
+       3*:  336:  if(token != TASSIGN) return(error("Assignment symbol is not found"));
+        3:  337:  printf(" %s ",token_str[token]);
+        3:  338:  token = Scan();
+       3*:  339:  if(parse_expression() == ERROR) return(ERROR);
+        3:  340:  return(NORMAL);
+        -:  341:}
+        -:  342:
+        3:  343:int parse_left_part(void){
+       3*:  344:  if(parse_variable() == ERROR) return(ERROR);
+        3:  345:  return(NORMAL);
+        -:  346:}
+        -:  347:
+       10:  348:int parse_variable(void){
+      10*:  349:  if(parse_variable_name() == ERROR) return(ERROR);
+       10:  350:  if(token == TLSQPAREN){
+    #####:  351:    printf("%s ",token_str[token]);
+    #####:  352:    token = Scan();
+    #####:  353:    if(parse_expression() == ERROR) return(ERROR);
+    #####:  354:    if(token != TRSQPAREN) return(error("Right squere parenthese is not found"));
+    #####:  355:    printf("%s ",token_str[token]);
+    #####:  356:    token = Scan();
+        -:  357:  }
+       10:  358:  return(NORMAL);
+        -:  359:}
+        -:  360:
+        5:  361:int parse_expression(void){
+       5*:  362:  if(parse_simple_expression() == ERROR) return(ERROR);
+        6:  363:  while(token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ){
+       1*:  364:    if(parse_relational_operator() == ERROR) return(ERROR);
+       1*:  365:    if(parse_simple_expression() == ERROR) return(ERROR);
+        -:  366:  }
+        5:  367:  return(NORMAL);
+        -:  368:}
+        -:  369:
+        6:  370:int parse_simple_expression(void){
+        6:  371:  if(token == TPLUS){
+    #####:  372:    printf("%s",token_str[token]);
+    #####:  373:    token = Scan();
+        6:  374:  }else if(token == TMINUS){
+    #####:  375:    printf("%s",token_str[token]);
+    #####:  376:    token = Scan();
+        -:  377:  }
+       6*:  378:  if(parse_term() == ERROR) return(ERROR);
+        8:  379:  while(token == TPLUS || token == TMINUS || token == TOR){
+       2*:  380:    if(parse_additive_operator() == ERROR) return(ERROR);
+       2*:  381:    if(parse_term() == ERROR) return(ERROR);
+        -:  382:  }
+        6:  383:  return(NORMAL);
+        -:  384:}
+        -:  385:
+        8:  386:int parse_term(void){
+       8*:  387:  if(parse_factor() == ERROR) return(ERROR);
+        8:  388:  while(token == TSTAR || token == TDIV || token == TAND){
+    #####:  389:    if(parse_multiplicative_operator() == ERROR) return(ERROR);
+    #####:  390:    if(parse_factor() == ERROR) return(ERROR);
+        -:  391:  }
+        8:  392:  return(NORMAL);
+        -:  393:}
+        -:  394:
+        8:  395:int parse_factor(void){
+        8:  396:  switch(token){
+        5:  397:    case TNAME:
+       5*:  398:      if(parse_variable() == ERROR) return(ERROR);
+        5:  399:      break;
+        3:  400:    case TNUMBER:
+        -:  401:    case TTRUE:
+        -:  402:    case TFALSE:
+        -:  403:    case TSTRING:
+       3*:  404:      if(parse_constant() == ERROR) return(ERROR);
+        3:  405:      break;
+    #####:  406:    case TLPAREN:
+    #####:  407:      printf("%s ",token_str[token]);
+    #####:  408:      token = Scan();
+    #####:  409:      if(parse_expression() == ERROR) return(ERROR);
+    #####:  410:      if(token != TRPAREN) return(error("Right parenthese is not found"));
+    #####:  411:      printf(" %s",token_str[token]);
+    #####:  412:      token = Scan();
+    #####:  413:      break;
+    #####:  414:    case TNOT:
+    #####:  415:      printf("%s ",token_str[token]);
+    #####:  416:      token = Scan();
+    #####:  417:      if(parse_factor() == ERROR) return(ERROR);
+    #####:  418:      break;
+    #####:  419:    case TINTEGER:
+        -:  420:    case TBOOLEAN:
+        -:  421:    case TCHAR:
+    #####:  422:      if(parse_standard_type() == ERROR) return(ERROR);
+    #####:  423:      if(token != TLPAREN) return(error("Left paranthese is not found"));
+    #####:  424:      printf("%s ",token_str[token]);
+    #####:  425:      if(parse_expression() == ERROR) return(ERROR);
+    #####:  426:      if(token != TRPAREN) return(error("Right paranthese is not found"));
+    #####:  427:      printf("%s ",token_str[token]);
+    #####:  428:      token = Scan();
+    #####:  429:      break;
+    #####:  430:    default:
+    #####:  431:      return(error("Factor is not found"));
+        -:  432:  }
+        8:  433:  return(NORMAL);
+        -:  434:}
+        -:  435:
+        5:  436:int parse_constant(void){
+        5:  437:  switch(token){
+        3:  438:    case TNUMBER:
+        3:  439:      printf("%d", num_attr);
+        3:  440:      token = Scan();
+        3:  441:      break;
+    #####:  442:    case TFALSE:
+    #####:  443:      printf("%s", token_str[token]);
+    #####:  444:      token = Scan();
+    #####:  445:      break;
+    #####:  446:    case TTRUE:
+    #####:  447:      printf("%s", token_str[token]);
+    #####:  448:      token = Scan();
+    #####:  449:      break;
+        2:  450:    case TSTRING:
+        2:  451:      printf("\'%s\'", string_attr);
+        2:  452:      token = Scan();
+        2:  453:      break;
+    #####:  454:    default:
+    #####:  455:      return(error("Constant is not found"));
+        -:  456:  }
+        5:  457:  return(NORMAL);
+        -:  458:}
+        -:  459:
+    #####:  460:int parse_multiplicative_operator(void){
+    #####:  461:  switch(token){
+    #####:  462:    case TSTAR:
+    #####:  463:      printf(" %s ",token_str[token]);
+    #####:  464:      token = Scan();
+    #####:  465:      return(NORMAL);
+        -:  466:      break;
+    #####:  467:    case TDIV:
+    #####:  468:      printf(" %s ",token_str[token]);
+    #####:  469:      token = Scan();
+    #####:  470:      return(NORMAL);
+        -:  471:      break;
+    #####:  472:    case TAND:
+    #####:  473:      printf(" %s ",token_str[token]);
+    #####:  474:      token = Scan();
+    #####:  475:      return(NORMAL);
+        -:  476:      break;
+    #####:  477:    default:
+    #####:  478:      return(error("Multiplicative operator is not found"));
+        -:  479:  }
+        -:  480:  return(NORMAL);
+        -:  481:}
+        -:  482:
+        2:  483:int parse_additive_operator(void){
+        2:  484:  switch(token){
+        1:  485:    case TPLUS:
+        1:  486:      printf(" %s ",token_str[token]);
+        1:  487:      token = Scan();
+        1:  488:      return(NORMAL);
+        -:  489:      break;
+        1:  490:    case TMINUS:
+        1:  491:      printf(" %s ",token_str[token]);
+        1:  492:      token = Scan();
+        1:  493:      return(NORMAL);
+        -:  494:      break;
+    #####:  495:    case TOR:
+    #####:  496:      printf(" %s ",token_str[token]);
+    #####:  497:      token = Scan();
+    #####:  498:      return(NORMAL);
+        -:  499:      break;
+    #####:  500:    default:
+    #####:  501:      return(error("additive operator is not found"));
+        -:  502:  }
+        -:  503:  return(NORMAL);
+        -:  504:}
+        -:  505:
+        1:  506:int parse_relational_operator(void){
+        1:  507:  switch(token){
+    #####:  508:    case TEQUAL:
+    #####:  509:      printf(" %s ",token_str[token]);
+    #####:  510:      token = Scan();
+    #####:  511:      return(NORMAL);
+        -:  512:      break;
+    #####:  513:    case TNOTEQ:
+    #####:  514:      printf(" %s ",token_str[token]);
+    #####:  515:      token = Scan();
+    #####:  516:      return(NORMAL);
+        -:  517:      break;
+    #####:  518:    case TLE:
+    #####:  519:      printf(" %s ",token_str[token]);
+    #####:  520:      token = Scan();
+    #####:  521:      return(NORMAL);
+        -:  522:      break;
+    #####:  523:    case TLEEQ:
+    #####:  524:      printf(" %s ",token_str[token]);
+    #####:  525:      token = Scan();
+    #####:  526:      return(NORMAL);
+        -:  527:      break;
+        1:  528:    case TGR:
+        1:  529:      printf(" %s ",token_str[token]);
+        1:  530:      token = Scan();
+        1:  531:      return(NORMAL);
+        -:  532:      break;
+    #####:  533:    case TGREQ:
+    #####:  534:      printf(" %s ",token_str[token]);
+    #####:  535:      token = Scan();
+    #####:  536:      return(NORMAL);
+        -:  537:      break;
+    #####:  538:    default:
+    #####:  539:      return(error("Relational operator is not found"));
+        -:  540:  }
+        -:  541:  return(NORMAL);
+        -:  542:}
+        -:  543:
+        2:  544:int parse_input_statement(void){
+        2:  545:  if(token == TREAD){
+    #####:  546:    printf("%s ",token_str[token]);
+    #####:  547:    token = Scan();
+        2:  548:  }else if(token == TREADLN){
+        2:  549:    printf("%s ",token_str[token]);
+        2:  550:    token = Scan();
+        -:  551:  }else{
+    #####:  552:    return(error("Keyword 'read' or 'readln' is not found"));
+        -:  553:  }
+        2:  554:  if(token == TLPAREN){
+        2:  555:    printf("%s ",token_str[token]);
+        2:  556:    token = Scan();
+       2*:  557:    if(parse_variable() == ERROR) return(ERROR);
+        2:  558:    while(token == TCOMMA){
+    #####:  559:      printf("%s ",token_str[token]);
+    #####:  560:      token = Scan();
+    #####:  561:      if(parse_variable() == ERROR) return(ERROR);
+        -:  562:    }
+       2*:  563:    if(token != TRPAREN) return(error("Right parenthese is not found"));
+        2:  564:    printf(" %s",token_str[token]);
+        2:  565:    token = Scan();
+        -:  566:  }
+        2:  567:  return(NORMAL);
+        -:  568:}
+        -:  569:
+        -:  570:
+        2:  571:int parse_output_statement(void){
+        2:  572:  if(token == TWRITE){
+    #####:  573:    printf("%s ",token_str[token]);
+    #####:  574:    token = Scan();
+        2:  575:  }else if(token == TWRITELN){
+        2:  576:    printf("%s ",token_str[token]);
+        2:  577:    token = Scan();
+        -:  578:  }else{
+    #####:  579:    return(error("Keyword 'write' or 'writeln' is not found"));
+        -:  580:  }
+        2:  581:  if(token == TLPAREN){
+        2:  582:    printf("%s ",token_str[token]);
+        2:  583:    token = Scan();
+       2*:  584:    if(parse_output_format() == ERROR) return(ERROR);
+        3:  585:    while(token == TCOMMA){
+        1:  586:      printf("%s ",token_str[token]);
+        1:  587:      token = Scan();
+       1*:  588:      if(parse_output_format() == ERROR) return(ERROR);
+        -:  589:    }
+       2*:  590:    if(token != TRPAREN) return(error("Right paranthese is not found"));
+        2:  591:    printf(" %s",token_str[token]);
+        2:  592:    token = Scan();
+        -:  593:  }
+        2:  594:  return(NORMAL);
+        -:  595:}
+        -:  596:
+        3:  597:int parse_output_format(void){
+        3:  598:  if(token == TSTRING){
+       2*:  599:    if(parse_constant() == ERROR) return(ERROR);
+        -:  600:  }else{
+       1*:  601:    if(parse_expression() == ERROR) return(ERROR);
+        1:  602:    if(token == TCOLON){
+    #####:  603:      printf("%s ",token_str[token]);
+    #####:  604:      token = Scan();
+    #####:  605:      if(token != TNUMBER) return(error("Unsigned integer is not found"));
+    #####:  606:      printf("%d",num_attr);
+    #####:  607:      token = Scan();
+        -:  608:    }
+        -:  609:  }
+        3:  610:  return(NORMAL);
+        -:  611:}
+        -:  612:
+    #####:  613:int parse_empty_statement(void){
+    #####:  614:  return(NORMAL);
+        -:  615:}
+        -:  616:
+       30:  617:void print_indent(int ic){
+       30:  618:  printf("\n");
+      160:  619:  for(int i=0;i<ic;i++){
+      130:  620:    printf("    ");
+        -:  621:  }
+       30:  622:}
