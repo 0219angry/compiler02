@@ -4,7 +4,7 @@ program parsetest;
   d : char;
   e : array[5] of char;
 
-  procedure procedure1(a1, a2 : integer;b1, b2 : char);
+  procedure procedure1(a1, a2 : integer);
     var a : integer;
     begin
     end;
@@ -32,7 +32,7 @@ program parsetest;
     n2 := false;
     n3 := true;
     n4 := 'string';
-    n5 := char(a ;
+    n5 := char(a);
     read(a,a[a+b]);
     readln(a,b);
     write(a:3,'string');

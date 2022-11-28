@@ -41,11 +41,11 @@ int parse_block(void){
       if(parse_variable_declaration() == ERROR) return(ERROR);
     }else if(token == TPROCEDURE){
       if(parse_subprogram_declaration() == ERROR) return(ERROR);
-    }else{
-      return(error("Block is not found"));
     }
+    print_indent(indent_count);
   }
   indent_count--;
+  print_indent(indent_count);
   if(parse_compound_statement() == ERROR) return(ERROR);
   return(NORMAL);
 }
@@ -66,7 +66,7 @@ int parse_variable_declaration(void){
     printf("%s" ,token_str[token]);
     token = Scan();
   }
-  print_indent(indent_count);
+  indent_count--;
   return(NORMAL);
 }
 
@@ -89,13 +89,19 @@ int parse_variable_name(void){
 }
 
 int parse_type(void){
-  if(parse_standard_type() == NORMAL){
-    return(NORMAL);
-  }else if(parse_array_type() == NORMAL){
-    return(NORMAL);
-  }else{
-    return(ERROR);
+  switch(token){
+    case TINTEGER:
+    case TBOOLEAN:
+    case TCHAR:
+      if(parse_standard_type() == ERROR) return(ERROR);
+      break;
+    case TARRAY:
+      if(parse_array_type() == ERROR) return(ERROR);
+      break;
+    default:
+      return(error("type is not found"));
   }
+  return(NORMAL);
 }
 
 int parse_standard_type(void){
@@ -162,7 +168,6 @@ int parse_subprogram_declaration(void){
   printf("%s",token_str[token]);
   token = Scan();
   indent_count--;
-  print_indent(indent_count);
   return(NORMAL);
 }
 
@@ -246,7 +251,7 @@ int parse_statement(void){
       if(parse_compound_statement() == ERROR) return(ERROR);
       break;
     default:
-      return(error("Statement is not found"));
+      if(parse_empty_statement() == ERROR) return(ERROR);
   }
   return(NORMAL);
 }
@@ -262,16 +267,17 @@ int parse_condition_statement(void){
   indent_count++;
   print_indent(indent_count);
   if(parse_statement() == ERROR) return(ERROR);
-  indent_count--;
-  print_indent(indent_count);
+
   if(token == TELSE){
+    indent_count--;
+    print_indent(indent_count);
     printf("%s",token_str[token]);
     token = Scan();
     indent_count++;
     print_indent(indent_count);
-    if(parse_statement() == ERROR) return(ERROR);
-    indent_count--;
+    if(parse_statement() == ERROR) return(ERROR);  
   }
+  indent_count--;
   return(NORMAL);
 }
 
@@ -327,7 +333,6 @@ int parse_return_statement(void){
   if(token != TRETURN) return(error("Keyword 'return' is not found"));
   printf("%s",token_str[token]);
   token = Scan();
-  print_indent(indent_count);
   return(NORMAL);
 }
 
@@ -422,6 +427,7 @@ int parse_factor(void){
       if(parse_standard_type() == ERROR) return(ERROR);
       if(token != TLPAREN) return(error("Left paranthese is not found"));
       printf("%s ",token_str[token]);
+      token = Scan();
       if(parse_expression() == ERROR) return(ERROR);
       if(token != TRPAREN) return(error("Right paranthese is not found"));
       printf("%s ",token_str[token]);
