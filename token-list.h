@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "semantic.h"
 
 #define MAXSTRSIZE 1024
 

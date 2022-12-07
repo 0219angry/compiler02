@@ -10,8 +10,15 @@ char *token_str[NUMOFTOKEN+1] = {
 	">=", "(", ")", "[", "]", ":=", ".", ",", ":", ";", "read","write", "break"
 };
 
+/* scan.c */
 extern int token;
 int indent_count;
+
+/* semantic.c */
+extern ID *tempID;
+extern int isloot;
+
+
 
 int parse_program(void){
   indent_count = 0;
@@ -84,6 +91,9 @@ int parse_variable_names(void){
 int parse_variable_name(void){
   if(token != TNAME) return(error("Variable name is not found"));
   printf("%s", string_attr);
+  char *newname = malloc(sizeof(char) * MAXSTRSIZE);
+  strcpy(newname, string_attr);
+  //複数のvariable nameがあったときどう処理するか
   token = Scan();
   return(NORMAL);
 }
