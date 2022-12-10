@@ -10,13 +10,27 @@ char *token_str[NUMOFTOKEN+1] = {
 	">=", "(", ")", "[", "]", ":=", ".", ",", ":", ";", "read","write", "break"
 };
 
+
+
 /* scan.c */
 extern int token;
 int indent_count;
+extern int current_line;
 
 /* semantic.c */
-extern ID *tempID;
-extern int isloot;
+extern ID *tempID; /* in variable declaration now defined IDs is here */
+
+
+/* process state */
+int is_variable_declaration = 0; /* 0:out declaration 1:in declaration */
+int is_in_procedure = 0; /* 0:out procedure 1:in procedure 2:procedure name*/
+int is_call_statement = 0; /* 0:not call 1:call */
+int is_formal_parameter = 0; /* 0:no 1:yes */
+char *procname_ptr  = NULL; /* if global NULL, else procname pointer*/
+int typenum = 0; /* type number */
+int arraysize = 0; /* if type array, size of array */
+
+
 
 
 
@@ -58,22 +72,29 @@ int parse_block(void){
 }
 
 int parse_variable_declaration(void){
+  is_variable_declaration = 1;
   if(token != TVAR) return(error("Keyword 'var' is not found"));
   printf("%s" ,token_str[token]);
   indent_count++;
   token = Scan();
   while(token == TNAME){
+    int tp;
+    TYPE *temptype;
+
     print_indent(indent_count);
     if(parse_variable_names() == ERROR) return(ERROR);
     if(token != TCOLON) return(error("Colon is not found"));
     printf(" %s " ,token_str[token]);
     token = Scan();
-    if(parse_type() == ERROR) return(ERROR);
+    if((tp = parse_type()) == ERROR) return(ERROR);
+    temptype = create_type(tp,arraysize);
+    add_type(temptype);
     if(token != TSEMI) return(error("Semicolon is not found"));
     printf("%s" ,token_str[token]);
     token = Scan();
   }
   indent_count--;
+  is_variable_declaration = 0;
   return(NORMAL);
 }
 
@@ -81,7 +102,6 @@ int parse_variable_names(void){
   if(parse_variable_name() == ERROR) return(ERROR);
   while(token == TCOMMA){
     printf(" %s " ,token_str[token]);
-    
     token = Scan();
     if(parse_variable_name() == ERROR) return(ERROR);
   }
@@ -91,27 +111,32 @@ int parse_variable_names(void){
 int parse_variable_name(void){
   if(token != TNAME) return(error("Variable name is not found"));
   printf("%s", string_attr);
-  char *newname = malloc(sizeof(char) * MAXSTRSIZE);
-  strcpy(newname, string_attr);
-  //複数のvariable nameがあったときどう処理するか
+  if(is_variable_declaration == 1){
+    /* これは変数宣言のとき */
+    add_define_without_type();
+  }else{
+    /* これは変数参照のとき */
+    if(add_reference(string_attr,current_line) == NULL) return(ERROR);
+  }
   token = Scan();
   return(NORMAL);
 }
 
 int parse_type(void){
+  int tp;
   switch(token){
     case TINTEGER:
     case TBOOLEAN:
     case TCHAR:
-      if(parse_standard_type() == ERROR) return(ERROR);
+      if((tp = parse_standard_type()) == ERROR) return(ERROR);
       break;
     case TARRAY:
-      if(parse_array_type() == ERROR) return(ERROR);
+      if((tp = parse_array_type()) == ERROR) return(ERROR);
       break;
     default:
       return(error("type is not found"));
   }
-  return(NORMAL);
+  return(tp);
 }
 
 int parse_standard_type(void){
@@ -119,17 +144,17 @@ int parse_standard_type(void){
   case TINTEGER:
     printf("%s" ,token_str[token]);
     token = Scan();
-    return(NORMAL);
+    return(TPINT);
     break;
   case TBOOLEAN:
     printf("%s" ,token_str[token]);
     token = Scan();
-    return(NORMAL);
+    return(TPBOOL);
     break;
   case TCHAR:
     printf("%s" ,token_str[token]);
     token = Scan();
-    return(NORMAL);
+    return(TPCHAR);
     break;
   default:
     return(error("Standard type is not found"));
@@ -138,6 +163,7 @@ int parse_standard_type(void){
 }
 
 int parse_array_type(void){
+  int tp;
   if(token != TARRAY) return(error("Keyword 'array' is not found"));
   printf("%s" ,token_str[token]);
   token = Scan();
@@ -153,16 +179,31 @@ int parse_array_type(void){
   if(token != TOF) return(error("Keyword 'of' is not found"));
   printf("%s " ,token_str[token]);
   token = Scan();
-  if(parse_standard_type() == ERROR) return(ERROR);
-  return(NORMAL);
+  if((tp = parse_standard_type()) == ERROR) return(ERROR);
+  switch(tp){
+    case TPINT:
+      tp = TPARRAYINT;
+      break;
+    case TPBOOL:
+      tp = TPARRAYBOOL;
+      break;
+    case TPCHAR:
+      tp = TPARRAYCHAR;
+      break;
+    default:
+      return(ERROR);
+  }
+  return(tp);
 }
 
 int parse_subprogram_declaration(void){
   indent_count++;
   if(token !=TPROCEDURE) return(error("keyword 'procedure' is not found"));
+  is_in_procedure = 2;
   printf("%s ",token_str[token]);
   token = Scan();
   if(parse_procedure_name() == ERROR) return(ERROR);
+  is_in_procedure = 1;
   if(token == TLPAREN){
     if(parse_formal_parameters() == ERROR) return(ERROR);
   }
@@ -178,12 +219,20 @@ int parse_subprogram_declaration(void){
   printf("%s",token_str[token]);
   token = Scan();
   indent_count--;
+  is_in_procedure = 0;
   return(NORMAL);
 }
 
 int parse_procedure_name(void){
   if(token != TNAME) return(error("procedure name is not found"));
   printf("%s",string_attr);
+  if(is_in_procedure == 2){
+    /* これはサブプログラム宣言のとき */
+    add_define_without_type();
+  }else{
+    /* これはサブプログラム参照のとき */
+    if(add_reference(string_attr,current_line) == NULL) return(ERROR);
+  }
   token = Scan();
   return(NORMAL);
 }

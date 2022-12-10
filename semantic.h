@@ -36,9 +36,14 @@ typedef struct ID_t {
 
 void init_semantic(void);
 void clear_temp(void);
-ID * add_define(void);
+void add_define_without_type(void);
+void add_type(TYPE *ty);
+TYPE * create_type(int ttype, int arraysize);
+TYPE *add_formal_type(TYPE *loot, int ttype);
+void resist_define(void);
 ID * add_reference(char * name, int num);
 ID * search_ID(ID * top, char * name);
+
 
 
 #endif
