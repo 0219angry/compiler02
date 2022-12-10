@@ -19,6 +19,7 @@ extern int current_line;
 
 /* semantic.c */
 extern ID *tempID; /* in variable declaration now defined IDs is here */
+extern char *procname_attr; /* if global NULL, else procname pointer*/
 
 
 /* process state */
@@ -26,7 +27,7 @@ int is_variable_declaration = 0; /* 0:out declaration 1:in declaration */
 int is_in_procedure = 0; /* 0:out procedure 1:in procedure 2:procedure name*/
 int is_call_statement = 0; /* 0:not call 1:call */
 int is_formal_parameter = 0; /* 0:no 1:yes */
-char *procname_ptr  = NULL; /* if global NULL, else procname pointer*/
+
 int typenum = 0; /* type number */
 int arraysize = 0; /* if type array, size of array */
 
@@ -66,6 +67,13 @@ int parse_block(void){
     print_indent(indent_count);
   }
   indent_count--;
+
+  // cridlootへの追加
+  if(is_in_procedure == 0){
+    regist_proc_global();
+  }else if(is_in_procedure == 1){
+    regist_proc_local();
+  }
   print_indent(indent_count);
   if(parse_compound_statement() == ERROR) return(ERROR);
   return(NORMAL);
@@ -87,13 +95,14 @@ int parse_variable_declaration(void){
     printf(" %s " ,token_str[token]);
     token = Scan();
     if((tp = parse_type()) == ERROR) return(ERROR);
-    temptype = create_type(tp,arraysize);
+    temptype = create_type(tp);
     add_type(temptype);
     if(token != TSEMI) return(error("Semicolon is not found"));
     printf("%s" ,token_str[token]);
     token = Scan();
   }
   indent_count--;
+
   is_variable_declaration = 0;
   return(NORMAL);
 }
@@ -112,10 +121,10 @@ int parse_variable_name(void){
   if(token != TNAME) return(error("Variable name is not found"));
   printf("%s", string_attr);
   if(is_variable_declaration == 1){
-    /* これは変数宣言のとき */
+    /* 変数宣言のとき */
     add_define_without_type();
   }else{
-    /* これは変数参照のとき */
+    /* 変数参照のとき */
     if(add_reference(string_attr,current_line) == NULL) return(ERROR);
   }
   token = Scan();
@@ -214,6 +223,14 @@ int parse_subprogram_declaration(void){
   if(token == TVAR){
     if(parse_variable_declaration() == ERROR) return(ERROR);
   }
+
+  // cridlootへの追加
+  if(is_in_procedure == 0){
+    regist_proc_global();
+  }else if(is_in_procedure == 1){
+    regist_proc_local();
+  }
+
   if(parse_compound_statement() == ERROR) return(ERROR);
   if(token != TSEMI) return(error("Semicolon is not found"));
   printf("%s",token_str[token]);
@@ -227,10 +244,14 @@ int parse_procedure_name(void){
   if(token != TNAME) return(error("procedure name is not found"));
   printf("%s",string_attr);
   if(is_in_procedure == 2){
-    /* これはサブプログラム宣言のとき */
+    /* サブプログラム宣言のとき */
     add_define_without_type();
+    strcpy(procname_attr,string_attr);
+    TYPE *temptype;
+    temptype = create_type(TPPROC);
+    add_type(temptype);
   }else{
-    /* これはサブプログラム参照のとき */
+    /* サブプログラム参照のとき */
     if(add_reference(string_attr,current_line) == NULL) return(ERROR);
   }
   token = Scan();

@@ -12,6 +12,9 @@
 #define TPARRAYBOOL 16
 #define TPPROC 17
 
+
+
+
 typedef struct TYPE_t {
   int ttype;
   int arraysize;
@@ -34,14 +37,22 @@ typedef struct ID_t {
   ID *nextp;
 } ID;
 
+typedef struct PROC_t {
+  char *procname;
+  ID *iidp;
+  PROC *nextp;
+} PROC;
+
 void init_semantic(void);
 void clear_temp(void);
 void add_define_without_type(void);
 void add_type(TYPE *ty);
-TYPE * create_type(int ttype, int arraysize);
+TYPE * create_type(int ttype);
 TYPE *add_formal_type(TYPE *loot, int ttype);
 void resist_define(void);
 ID * add_reference(char * name, int num);
+void regist_proc_global();
+void regist_proc_local();
 ID * search_ID(ID * top, char * name);
 
 
