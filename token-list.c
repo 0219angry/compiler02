@@ -64,6 +64,11 @@ int main(int nc, char *np[]) {
   if(parse_program() == ERROR) return -1;
   end_scan();
 
+
+  /* クロスリファレンサの出力*/
+  
+  print_cridloot();
+
   return 0;
 }
 

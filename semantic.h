@@ -12,48 +12,57 @@
 #define TPARRAYBOOL 16
 #define TPPROC 17
 
-
+#define NUMOFTYPE 8
 
 
 typedef struct TYPE_t {
   int ttype;
   int arraysize;
-  TYPE *etp;
-  TYPE *paratp;
+  struct TYPE_t *etp;
+  struct TYPE_t *paratp;
 } TYPE;
 
 typedef struct LINE_t {
   int reflinenum;
-  LINE *nextlinep;
+  struct LINE_t *nextlinep;
 } LINE;
 
 typedef struct ID_t {
   char *name;
   char *procname;
-  TYPE *itp;
+  struct TYPE_t *itp;
   int ispara;
   int deflinenum;
-  LINE *irefp;
-  ID *nextp;
+  struct LINE_t *irefp;
+  struct ID_t *nextp;
 } ID;
 
 typedef struct PROC_t {
   char *procname;
-  ID *iidp;
-  PROC *nextp;
+  struct ID_t *iidp;
+  struct PROC_t *nextp;
 } PROC;
 
-void init_semantic(void);
-void clear_temp(void);
 void add_define_without_type(void);
 void add_type(TYPE *ty);
 TYPE * create_type(int ttype);
 TYPE *add_formal_type(TYPE *loot, int ttype);
-void resist_define(void);
+int regist_define(void);
 ID * add_reference(char * name, int num);
-void regist_proc_global();
-void regist_proc_local();
+int regist_proc_global();
+int regist_proc_local();
 ID * search_ID(ID * top, char * name);
+int check_overloading(char * name);
+
+ID * malloc_ID(void);
+TYPE * malloc_TYPE(void);
+PROC * malloc_PROC(void);
+LINE * malloc_LINE(void);
+
+void print_cridloot(void);
+char * get_type_name(int ttype);
+
+int print_ID_for_debug(ID * loot);
 
 
 
