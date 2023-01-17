@@ -1,6 +1,8 @@
 #include "token-list.h"
 
-
+extern int if_true_label;
+extern int if_false_label;
+extern int iteration_label;
 
 int asm_start(char *programname){
   fprintf(caslfilep,"$$%s\tSTART\t\n",programname);
@@ -85,7 +87,53 @@ int asm_ref_rval(ID * refed){
   return 0;
 }
 
-int asm_expression(){
+int asm_assign(){
+  fprintf(caslfilep,"\tPOP\tgr2\n");
+  fprintf(caslfilep,"\tPOP\tgr1\n");
+  fprintf(caslfilep,"\tST\tgr2,0,gr1\n");
+  return 0;
+}
+
+int asm_expression(int opr){
+  if_true_label = label;
+  label++;
+  if_false_label = label;
+  label++;
+  fprintf(caslfilep,"\tPOP\tgr2\n");
+  fprintf(caslfilep,"\tPOP\tgr1\n");
+  fprintf(caslfilep,"\tCPA\tgr1, gr2\n");
+  switch(opr){
+    case TEQUAL:
+      fprintf(caslfilep,"\tJNZ\tL%04d\n",if_false_label);
+      break;
+    case TNOTEQ:
+      fprintf(caslfilep,"\tJZE\tL%04d\n",if_false_label);
+      break;
+    case TLE:
+      fprintf(caslfilep,"\tJPL\tL%04d\n",if_false_label);
+      fprintf(caslfilep,"\tJZE\tL%04d\n",if_false_label);
+      break;
+    case TLEEQ:
+      fprintf(caslfilep,"\tJPL\tL%04d\n",if_false_label);
+      break;
+    case TGR:
+      fprintf(caslfilep,"\tJMI\tL%04d\n",if_false_label);
+      fprintf(caslfilep,"\tJZE\tL%04d\n",if_false_label);
+      break;
+    case TGREQ:
+      fprintf(caslfilep,"\tJMI\tL%04d\n",if_false_label);
+      break;
+    default:
+      error("unknown relational operand");
+
+  }
+  fprintf(caslfilep,"\tLAD\tgr1, 1\n");
+  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+  fprintf(caslfilep,"\tJUMP\tL%04d\n",if_true_label);
+
+  fprintf(caslfilep,"L%04d\tLD\tgr1, gr0\n",if_false_label);
+  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+  fprintf(caslfilep,"L%04d\t\t\n",if_true_label);
   return 0;
 }
 
@@ -134,13 +182,23 @@ int asm_MULA(){
 int asm_DIVA(){
   fprintf(caslfilep,"\tPOP\tgr2\n");
   fprintf(caslfilep,"\tPOP\tgr1\n");
-  fprintf(caslfilep,"\tADDA\tgr1, gr2\n");
-  fprintf(caslfilep,"\tJOV\tOVF\n");
+  fprintf(caslfilep,"\tOR\tgr1,gr1\n");
+  fprintf(caslfilep,"\tJZE\tE0DIV\n");
+  fprintf(caslfilep,"\tDIVA\tgr1, gr2\n");
   fprintf(caslfilep,"\tPUSH\t0, gr1\n");
   return 0;
 }
 
 int asm_AND(){
+  fprintf(caslfilep,"\tPOP\tgr2\n");
+  fprintf(caslfilep,"\tPOP\tgr1\n");
+  fprintf(caslfilep,"\tAND\tgr1, gr2\n");
+  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+  return 0;
+}
+
+int asm_call(ID * called){
+  fprintf(caslfilep,"\tCALL\t$%s\n",called->name);
   return 0;
 }
 
@@ -161,10 +219,30 @@ int asm_readln(){
   return 0;
 }
 
+int asm_output_format(int etype, int num){
+  fprintf(caslfilep,"\tPOP\tgr1\n");
+  fprintf(caslfilep,"\tLAD\tgr2, num\n");
+  switch(etype){
+    case TPSTR:
+    case TPCHAR:
+      fprintf(caslfilep,"\tCALL\tWRITESTR\n");
+      break;
+    case TPINT:
+      fprintf(caslfilep,"\tCALL\tWRITEINT\n");
+      break;
+    case TPBOOL:
+      fprintf(caslfilep,"\tCALL\tWRITEBOOL\n");
+      break;
+  }
+  return 0;
+}
+
 int asm_write(){
+  fprintf(caslfilep,"\tCALL\tWRITE\n");
   return 0;
 }
 
 int asm_writeln(){
+  fprintf(caslfilep,"\tCALL\tWRITELINE\n");
   return 0;
 }

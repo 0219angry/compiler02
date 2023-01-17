@@ -9,6 +9,10 @@ $kazuyomikomi	DS	0
 	POP	gr1
 	ST	gr1, $n%kazuyomikomi
 	PUSH	gr2
+	POP	gr1
+	LAD	gr2, num
+	CALL	WRITESTR
+	CALL	WRITELINE
 	LD	gr1, $n%kazuyomikomi
 	PUSH	0, gr1
 	CALL	READINT
@@ -16,6 +20,14 @@ $kazuyomikomi	DS	0
 $wakakidasi	DS	0
 	POP	gr2
 	PUSH	gr2
+	POP	gr1
+	LAD	gr2, num
+	CALL	WRITESTR
+	CALL	WRITELINE
+	POP	gr1
+	LAD	gr2, num
+	CALL	WRITEINT
+	CALL	WRITELINE
 $n%goukei	DC	0
 $s%goukei	DC	0
 $goukei	DS	0
@@ -25,10 +37,48 @@ $goukei	DS	0
 	POP	gr1
 	ST	gr1, $n%goukei
 	PUSH	gr2
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JMI	L0002
+	JZE	L0002
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0001
+L0002	LD	gr1, gr0
+	PUSH	0, gr1
+L0001		
 	LAD	gr1, $data%goukei
 	PUSH	0, gr1
 	CALL	READINT
 	CALL	READLINE
+	POP	gr2
+	POP	gr1
+	ADDA	gr1, gr2
+	JOV	OVF
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	POP	gr2
+	POP	gr1
+	SUBA	gr1, gr2
+	JOV	OVF
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	CALL	$n
+	POP	gr2
+	POP	gr1
+	MULA	gr1, gr2
+	JOV	OVF
+	PUSH	0, gr1
+	CALL	$n
+	CALL	$sum
  ;                           ;
  ;     utilities library     ;
  ;                           ;
@@ -249,4 +299,4 @@ INP	DC	0
 OBUF	DS	257
 IBUF	DS	257
 RPBBUF	DC	0
-END		
+	END	

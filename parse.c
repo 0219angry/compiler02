@@ -42,8 +42,9 @@ int arraysize = 0; /* if type array, size of array */
 
 ID *referenced_val;
 
-
-
+int if_true_label = 0;
+int if_false_label = 0;
+int iteration_label = 0;
 
 
 int parse_program(void){
@@ -405,10 +406,12 @@ int parse_exit_statement(void){
 }
 
 int parse_call_statement(void){
+  ID * called_proc;
   if(token != TCALL) return(error("Keyword 'call' is not found"));
   
   token = Scan();
   if(parse_procedure_name() == ERROR) return(ERROR);
+  called_proc = referenced_val;
   if(token == TLPAREN){
     
     token = Scan();
@@ -417,6 +420,7 @@ int parse_call_statement(void){
     
     token = Scan();
   }
+  asm_call(called_proc);
   return(NORMAL);
 }
 
@@ -448,6 +452,7 @@ int parse_assignment_statement(void){
   if(Ltype != Rtype){
     return(error("in assignment statement, both side needs same type"));
   }
+  asm_assign();
   return(NORMAL);
 }
 
@@ -495,6 +500,7 @@ int parse_expression(void){
      if(Ltype != Rtype){
           return(error("relational operetor needs same type on both side"));
     }
+    asm_expression(ope);
     Ltype = TPBOOL;
   }
   return(Ltype);
@@ -510,14 +516,17 @@ int parse_simple_expression(void){
     
     token = Scan();
   }else if(token == TMINUS){
-    isplusminus = 1;
+    isplusminus = -1;
     
     token = Scan();
   }
   if((Ltype = parse_term()) == ERROR) return(ERROR);
-  if(isplusminus == 1){
+  if(isplusminus != 0){
     if(Ltype != TPINT){
       return(error("simple expression needs integer"));
+    }
+    if(isplusminus == -1){
+      asm_minus_sign();
     }
   }
   while(token == TPLUS || token == TMINUS || token == TOR){
@@ -536,6 +545,17 @@ int parse_simple_expression(void){
           return(error("additive operator or need integer"));
         }
         Ltype = TPBOOL;
+        break;
+    }
+    switch(ope){
+      case TPLUS:
+        asm_ADDA();
+        break;
+      case TMINUS:
+        asm_SUBA();
+        break;
+      case TOR:
+        asm_OR();
         break;
     }
   }
@@ -563,6 +583,17 @@ int parse_term(void){
           return(error("multiplicative operator and need integer"));
         }
         Ltype = TPBOOL;
+        break;
+    }
+    switch(ope){
+      case TSTAR:
+        asm_MULA();
+        break;
+      case TDIV:
+        asm_DIVA();
+        break;
+      case TAND:
+        asm_AND();
         break;
     }
   }
@@ -692,32 +723,32 @@ int parse_relational_operator(void){
     case TEQUAL:
       
       token = Scan();
-      return(NORMAL);
+      return(TEQUAL);
       break;
     case TNOTEQ:
       
       token = Scan();
-      return(NORMAL);
+      return(TNOTEQ);
       break;
     case TLE:
       
       token = Scan();
-      return(NORMAL);
+      return(TLE);
       break;
     case TLEEQ:
       
       token = Scan();
-      return(NORMAL);
+      return(TLEEQ);
       break;
     case TGR:
       
       token = Scan();
-      return(NORMAL);
+      return(TGR);
       break;
     case TGREQ:
       
       token = Scan();
-      return(NORMAL);
+      return(TGREQ);
       break;
     default:
       return(error("Relational operator is not found"));
@@ -764,11 +795,12 @@ int parse_input_statement(void){
 
 
 int parse_output_statement(void){
+  int ln;
   if(token == TWRITE){
-    
+    ln = 0;
     token = Scan();
   }else if(token == TWRITELN){
-    
+    ln = 1;
     token = Scan();
   }else{
     return(error("Keyword 'write' or 'writeln' is not found"));
@@ -777,10 +809,16 @@ int parse_output_statement(void){
     
     token = Scan();
     if(parse_output_format() == ERROR) return(ERROR);
+    if(ln == 1){
+      asm_writeln();
+    }
     while(token == TCOMMA){
       
       token = Scan();
       if(parse_output_format() == ERROR) return(ERROR);
+      if(ln == 1){
+        asm_writeln();
+      }
     }
     if(token != TRPAREN) return(error("Right paranthese is not found"));
     
@@ -791,8 +829,10 @@ int parse_output_statement(void){
 
 int parse_output_format(void){
   int etype;
+  int output_count = 0;
   if(token == TSTRING){
     if(parse_constant() == ERROR) return(ERROR);
+    etype = TPSTR;
   }else{
     if((etype = parse_expression()) == ERROR) return(ERROR);
     if(etype != TPINT && etype != TPCHAR && etype != TPBOOL){
@@ -802,9 +842,11 @@ int parse_output_format(void){
       
       token = Scan();
       if(token != TNUMBER) return(error("Unsigned integer is not found"));
+      output_count = num_attr;
       token = Scan();
     }
   }
+  asm_output_format(etype,output_count);
   return(NORMAL);
 }
 
