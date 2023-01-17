@@ -3,14 +3,16 @@ CC  = gcc
 # (2)コンパイルオプション
 CFLAGS    = -Wall 
 CFLAGS		+= -g
-CFLAGS		+= --coverage -fstack-protector
+# CFLAGS		+= --coverage -fstack-protector
 # (3)実行ファイル名
-TARGET  = cr
+TARGET  = compiler
 # (4)コンパイル対象のソースコード
 SRCS    = token-list.c
 SRCS		+= scan.c
 SRCS		+= parse.c
 SRCS		+= semantic.c
+SRCS		+= caslmacro.c
+SRCS		+= assemble.c
 # (5)オブジェクトファイル名
 OBJS    = $(SRCS:.c=.o)
  

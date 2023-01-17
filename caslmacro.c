@@ -1,16 +1,32 @@
 #include "token-list.h"
-#include "caslmacro.h"
 
-FILE * caslfilep;
+
 
 int open_caslfile(char * name){
-  if((caslfilep = fopen(name,"w")) == NULL){
+  int i,len;
+  len = strlen(name);
+  char * outputname = malloc(sizeof(char) * len);
+  for(i=0;i<len;i++){
+    if(name[i] == '.'){
+      outputname[i] = '.';
+      outputname[i+1] = 'c';
+      outputname[i+2] = 's';
+      outputname[i+3] = 'l';
+      break;
+    }
+    outputname[i] = name[i];
+  }
+  if((caslfilep = fopen(outputname,"w")) == NULL){
     return -1;
   }
+  label = 1;
   return 0;
 }
 
 void add_utils(){
+  fprintf(caslfilep," ;                           ;\n");
+  fprintf(caslfilep," ;     utilities library     ;\n");
+  fprintf(caslfilep," ;                           ;\n");
   add_EOVF();
   add_E0DIV();
   add_EROV();
@@ -25,6 +41,7 @@ void add_utils(){
   add_READINT();
   add_READLINE();
   add_const();
+  fprintf(caslfilep,"\tEND\t\n");
 }
 
 
@@ -32,7 +49,7 @@ void add_utils(){
 
 /* Runtime error : Overflow */
 void add_EOVF(){
-  fprintf(caslfilep,"EOVF\tCALL\tWRITELINE");
+  fprintf(caslfilep,"EOVF\tCALL\tWRITELINE\n");
   fprintf(caslfilep,"\tLAD\tgr1, EOVF1\n");
   fprintf(caslfilep,"\tLD\tgr2, gr0\n");
   fprintf(caslfilep,"\tCALL\tWRITESTR\n");

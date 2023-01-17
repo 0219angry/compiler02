@@ -347,7 +347,7 @@ void print_cridloot(){
   procp = cridloot;
 
   printf("===============================================================================================\n");
-  printf("Name                          Type                          Def. Ref.                          \n");
+  printf("Name                          Type                          Def. para Ref.                          \n");
   
   while(procp != NULL){
     idp = procp->iidp;
@@ -392,6 +392,14 @@ void print_cridloot(){
       // Def. print
       
       printf("%-5d",idp->deflinenum);
+
+      // ispara print
+
+      if(idp->ispara == 0){
+        printf("n    ");
+      }else{
+        printf("y    ");
+      }
 
       // Ref. print
 

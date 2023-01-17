@@ -19,7 +19,7 @@ extern int parse_expressions(void);
 extern int parse_return_statement(void);
 extern int parse_assignment_statement(void);
 extern int parse_left_part(void);
-extern int parse_variable(void);
+extern int parse_variable(int isleft);
 extern int parse_expression(void);
 extern int parse_simple_expression(void);
 extern int parse_term(void);

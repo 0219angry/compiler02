@@ -25,6 +25,10 @@ extern ID *localidloot;
 extern ID *procid;
 extern PROC *cridloot;
 
+/* caslmacro.c */
+extern FILE * caslfilep;
+extern int label;
+
 
 
 /* process state */
@@ -36,6 +40,8 @@ int is_formal_parameter = 0; /* 0:no 1:yes */
 int typenum = 0; /* type number */
 int arraysize = 0; /* if type array, size of array */
 
+ID *referenced_val;
+
 
 
 
@@ -45,15 +51,16 @@ int parse_program(void){
   if(token != TPROGRAM) return(error("Keyword 'program' is not found"));
   token = Scan();
   if(token != TNAME) return(error("Promgram name is not found"));
+  if(asm_start(string_attr) == ERROR) return(ERROR);
   token = Scan();
   if(token != TSEMI) return(error("Semicolon is not found"));
   indent_count++;
-  
   token = Scan();
   if(parse_block() == ERROR) return(ERROR);
   if(token != TDOT) return(error("Period is not found at the end of program"));
   token = Scan();
   indent_count--;
+  add_utils();
   
   return(NORMAL);
 }
@@ -124,6 +131,7 @@ int parse_variable_name(void){
     /* 変数参照のとき */
     ID * id;
     if((id = add_reference(string_attr,line)) == NULL) return(ERROR);
+    referenced_val = id; 
     ttype = (id->itp)->ttype;
   }
   token = Scan();
@@ -212,14 +220,14 @@ int parse_subprogram_declaration(void){
     is_formal_parameter = 0;
   }
   if(token != TSEMI) return(error("Semicolon is not found"));
-  
+  if(asm_proc_val(localidloot) == ERROR) return(ERROR);
   token = Scan();
   is_variable_declaration = 1;
   if(token == TVAR){
     if(parse_variable_declaration() == ERROR) return(ERROR);
   }
   is_variable_declaration = 0;
-
+  if(asm_proc_start(localidloot,procname_attr) == ERROR) return(ERROR);
   if(parse_compound_statement() == ERROR) return(ERROR);
   if(token != TSEMI) return(error("Semicolon is not found"));
   token = Scan();
@@ -445,13 +453,14 @@ int parse_assignment_statement(void){
 
 int parse_left_part(void){
   int ttype;
-  if((ttype = parse_variable()) == ERROR) return(ERROR);
+  if((ttype = parse_variable(1)) == ERROR) return(ERROR);
   return(ttype);
 }
 
-int parse_variable(void){
+int parse_variable(int isleft){
   int ttype = NORMAL;
   int etype;
+  ID * variable_part = referenced_val;
   if((ttype = parse_variable_name()) == ERROR) return(ERROR);
   if(token == TLSQPAREN){
     if(ttype != TPARRAY){
@@ -459,12 +468,17 @@ int parse_variable(void){
     }
     
     token = Scan();
-    if((etype = parse_expression()) == ERROR) return(ERROR);
+    if((etype = parse_expression()) == ERROR) return(ERROR); // expressionの値がstacktopに入っている
     if(etype != TPINT){
       return(error("array number needs type integer"));
     }
     if(token != TRSQPAREN) return(error("Right squere parenthese is not found"));
-    
+
+    if(isleft == 1){
+      if(asm_ref_lval(variable_part) == ERROR) return(ERROR);
+    }else{
+      if(asm_ref_rval(variable_part) == ERROR) return(ERROR);
+    }
     token = Scan();
   }
   return(ttype);
@@ -559,7 +573,7 @@ int parse_factor(void){
   int ttype = NORMAL;
   switch(token){
     case TNAME:
-      if((ttype = parse_variable()) == ERROR) return(ERROR);
+      if((ttype = parse_variable(0)) == ERROR) return(ERROR);
       break;
     case TNUMBER:
     case TTRUE:
@@ -713,11 +727,12 @@ int parse_relational_operator(void){
 
 int parse_input_statement(void){
   int ttype;
+  int ln;
   if(token == TREAD){
-    
+    ln = 0;
     token = Scan();
   }else if(token == TREADLN){
-    
+    ln = 1;
     token = Scan();
   }else{
     return(error("Keyword 'read' or 'readln' is not found"));
@@ -725,14 +740,17 @@ int parse_input_statement(void){
   if(token == TLPAREN){
     
     token = Scan();
-    if((ttype = parse_variable()) == ERROR) return(ERROR);
+    if((ttype = parse_variable(0)) == ERROR) return(ERROR);
     if(ttype != TPCHAR && ttype != TPINT){
       return(error("read or readln needs integer or char "));
     }
+    if(asm_read(referenced_val) == ERROR) return(ERROR);
+    if(ln == 1){
+      asm_readln();
+    }
     while(token == TCOMMA){
-      
       token = Scan();
-      if((ttype = parse_variable()) == ERROR) return(ERROR);
+      if((ttype = parse_variable(0)) == ERROR) return(ERROR);
       if(ttype != TPCHAR && ttype != TPINT){
         return(error("read or readln needs integer or char "));
       }

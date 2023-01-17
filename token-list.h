@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "semantic.h"
+#include "assemble.h"
 
 #define MAXSTRSIZE 1024
 

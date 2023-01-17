@@ -58,7 +58,12 @@ int main(int nc, char *np[]) {
 	  printf("File %s can not open.\n", np[1]);
 	  return 0;
   }
-
+  /* casl出力準備 */
+  
+  if(open_caslfile(np[1]) < 0){
+    printf("Couldn't create casl program output file.\n");
+    return 0;
+  }
   /* 構文解析を行う */
   token = Scan();
   if(parse_program() == ERROR) return -1;
