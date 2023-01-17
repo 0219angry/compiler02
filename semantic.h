@@ -11,8 +11,9 @@
 #define TPARRAYCHAR 15
 #define TPARRAYBOOL 16
 #define TPPROC 17
+#define TPSTR 18
 
-#define NUMOFTYPE 8
+#define NUMOFTYPE 9
 
 
 typedef struct TYPE_t {
