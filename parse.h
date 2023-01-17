@@ -1,0 +1,36 @@
+
+extern int parse_block(void);
+extern int parse_variable_declaration(void);
+extern int parse_variable_names(void);
+extern int parse_variable_name(void);
+extern int parse_type(void);
+extern int parse_standard_type(void);
+extern int parse_array_type(void);
+extern int parse_subprogram_declaration(void);
+extern int parse_procedure_name(void);
+extern int parse_formal_parameters(void);
+extern int parse_compound_statement(void);
+extern int parse_statement(void);
+extern int parse_condition_statement(void);
+extern int parse_iteration_statement(void);
+extern int parse_exit_statement(void);
+extern int parse_call_statement(void);
+extern int parse_expressions(void);
+extern int parse_return_statement(void);
+extern int parse_assignment_statement(void);
+extern int parse_left_part(void);
+extern int parse_variable(int isleft);
+extern int parse_expression(void);
+extern int parse_simple_expression(void);
+extern int parse_term(void);
+extern int parse_factor(void);
+extern int parse_constant(void);
+extern int parse_multiplicative_operator(void);
+extern int parse_additive_operator(void);
+extern int parse_relational_operator(void);
+extern int parse_input_statement(void);
+extern int parse_output_statement(void);
+extern int parse_output_format(void);
+extern int parse_empty_statement(void);
+
+extern void print_indent(int ic);

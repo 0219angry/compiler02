@@ -1,0 +1,3 @@
+'STRING' 'S''T''R''I''N''G' 
+'STRING
+STRING'

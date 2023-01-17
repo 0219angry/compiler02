@@ -1,5 +1,6 @@
 ﻿#include "token-list.h"
 
+
 /* keyword list */
 struct KEY key[KEYWORDSIZE] = {
 	{"and", 	TAND	},
@@ -45,30 +46,39 @@ char *tokenstr[NUMOFTOKEN+1] = {
 	">=", "(", ")", "[", "]", ":=", ".", ",", ":", ";", "read","write", "break"
 };
 
-int main(int nc, char *np[]) {
-	int token, i;
+int token;
 
-    if(nc < 2) {
-	printf("File name id not given.\n");
-	return 0;
-    }
-    if(init_scan(np[1]) < 0) {
-	printf("File %s can not open.\n", np[1]);
-	return 0;
-    }
-    /* 作成する部分：トークンカウント用の配列？を初期化する */
-    for(int i=0;i<NUMOFTOKEN+1;i++){
-      numtoken[i] = 0;
-    }
-    while((token = scan()) >= 0) {
-	/* 作成する部分：トークンをカウントする */
-    }
-    end_scan();
-    /* 作成する部分:カウントした結果を出力する */
+int main(int nc, char *np[]) {
+
+  if(nc < 2) {
+	  printf("File name id not given.\n");
+	  return 0;
+  }
+  if(init_scan(np[1]) < 0) {
+	  printf("File %s can not open.\n", np[1]);
+	  return 0;
+  }
+  /* casl出力準備 */
+  
+  if(open_caslfile(np[1]) < 0){
+    printf("Couldn't create casl program output file.\n");
     return 0;
+  }
+  /* 構文解析を行う */
+  token = Scan();
+  if(parse_program() == ERROR) return -1;
+  end_scan();
+
+
+  /* クロスリファレンサの出力*/
+  
+  print_cridloot();
+
+  return 0;
 }
 
-void error(char *mes) {
+int error(char *mes) {
 	printf("\n ERROR: %s\n", mes);
 	end_scan();
+  return ERROR;
 }

@@ -1,0 +1,473 @@
+        -:    0:Source:semantic.c
+        -:    0:Graph:semantic.gcno
+        -:    0:Data:semantic.gcda
+        -:    0:Runs:5
+        -:    1:#include "token-list.h"
+        -:    2:
+        -:    3:
+        -:    4:char *typestr[NUMOFTYPE+1] = {
+        -:    5:  "",
+        -:    6:  "integer", "char", "boolean", "array", "integer", "char", "boolean", "procedure"
+        -:    7:};
+        -:    8:
+        -:    9:
+        -:   10:
+        -:   11:
+        -:   12:/* scan.c */
+        -:   13:extern int current_line;
+        -:   14:
+        -:   15:/* parse.c */
+        -:   16:extern int arraysize;
+        -:   17:extern int is_variable_declaration; /* 0:out declaration 1:in declaration */
+        -:   18:extern int is_in_procedure; /* 0:out procedure 1:in procedure 2:procedure name*/
+        -:   19:extern int is_call_statement; /* 0:not call 1:call */
+        -:   20:extern int is_formal_parameter; /* 0:no 1:yes */
+        -:   21:
+        -:   22:char *procname_attr = NULL;
+        -:   23:ID *tempID = NULL;
+        -:   24:int isloot = 0; /* 0:global 1:local */
+        -:   25:int ispara = 0; /* 0:parameter 1:variable */
+        -:   26:
+        -:   27:/* cross reference ID List loot */
+        -:   28:ID *globalidloot = NULL;
+        -:   29:ID *localidloot = NULL;
+        -:   30:ID *procid = NULL;
+        -:   31:PROC *cridloot = NULL;
+        -:   32:
+        -:   33:
+        -:   34:
+        -:   35:/* 変数名を追加(変数宣言部で使用) 
+        -:   36: * 
+        -:   37:
+        -:   38:*/
+       25:   39:void add_define_without_type(){
+       25:   40:  ID *newdef = malloc_ID();
+        -:   41:  char *name;
+       25:   42:  if((name = malloc(sizeof(char) * MAXSTRSIZE)) == NULL){
+    #####:   43:    error("memory error");
+    #####:   44:    exit(EXIT_FAILURE);
+        -:   45:  }
+       25:   46:  printf("%s",name);
+       25:   47:  strcpy(name, string_attr);
+       25:   48:  newdef->name = name;
+       25:   49:  newdef->procname = procname_attr;
+       25:   50:  newdef->itp = NULL;
+       25:   51:  newdef->ispara = is_formal_parameter;
+       25:   52:  newdef->deflinenum = current_line;
+       25:   53:  newdef->nextp = NULL;
+       25:   54:  if(tempID == NULL){
+       24:   55:    tempID = newdef;
+        -:   56:  }else{
+        -:   57:    ID *p;
+        1:   58:    p = tempID;
+        1:   59:    while(p->nextp != NULL){
+    #####:   60:      p = p->nextp;
+        -:   61:    }
+        1:   62:    p->nextp = newdef;
+        -:   63:  }
+       25:   64:  if(is_in_procedure == 2){
+        -:   65:    char *procname;
+        5:   66:    if((procname = malloc(sizeof(char) * MAXSTRSIZE)) == NULL){
+    #####:   67:      error("memory error");
+    #####:   68:      exit(EXIT_FAILURE);
+        -:   69:    }
+        -:   70:   
+        5:   71:    strcpy(procname, string_attr);
+        5:   72:    procname_attr = procname;
+        -:   73:  }
+       25:   74:}
+        -:   75:
+        -:   76:/* tempIDのリストの要素すべての型にtyを追加 
+        -:   77: * @param[in] ty 追加するTYPE
+        -:   78: */
+       24:   79:void add_type(TYPE *ty){
+       24:   80:  ID *p = tempID;
+       24:   81:  p->itp = ty;
+       25:   82:  while(p->nextp != NULL){
+        1:   83:    p = p->nextp;
+        1:   84:    p->itp = ty;
+        -:   85:  }
+       24:   86:}
+        -:   87:
+        -:   88:/*
+        -:   89: TYPEを作成する
+        -:   90: @param[in] ttype 型
+        -:   91: @param[in] arraysize (arrayのとき)配列長さ*/
+       24:   92:TYPE * create_type(int ttype){
+        -:   93:  TYPE *typeptr;
+       24:   94:  typeptr = malloc_TYPE();
+       24:   95:  switch(ttype){
+       19:   96:    case TPINT:
+        -:   97:    case TPBOOL:
+        -:   98:    case TPCHAR:
+       19:   99:      typeptr->ttype = ttype;
+       19:  100:      break;
+    #####:  101:    case TPARRAYINT:
+        -:  102:    case TPARRAYBOOL:
+        -:  103:    case TPARRAYCHAR:
+    #####:  104:      typeptr->ttype = TPARRAY;
+        -:  105:      TYPE *typeptrarray;
+    #####:  106:      typeptrarray = malloc_TYPE();
+    #####:  107:      typeptr->etp = typeptrarray;
+    #####:  108:      typeptrarray->ttype = ttype;
+    #####:  109:      typeptr->arraysize = arraysize;
+    #####:  110:      break;
+        5:  111:    case TPPROC:
+        5:  112:      typeptr->ttype = TPPROC;
+        -:  113:      // PROCが来たら何とかする
+        5:  114:      break;
+    #####:  115:    default:
+    #####:  116:      error("unknown type.");
+        -:  117:  }
+       24:  118:  arraysize = 0;
+       24:  119:  return typeptr;
+        -:  120:}
+        -:  121:
+        -:  122:/*
+        -:  123: *
+        -:  124:*/
+        4:  125:TYPE *add_formal_type(TYPE *loot, int ttype){
+        4:  126:  TYPE *p = loot;
+        4:  127:  while(p->paratp != NULL){
+    #####:  128:    p = p->paratp;
+        -:  129:  }
+        4:  130:  TYPE *newformaltype = malloc_TYPE();
+        4:  131:  newformaltype->ttype = ttype;
+        4:  132:  p->paratp = newformaltype;
+        4:  133:  return p;
+        -:  134:}
+        -:  135:
+        -:  136:
+        -:  137:/* regist_define : 変数名をクロスリファレンサに登録
+        -:  138:   is_in_procedure:0,2 globalidlootの末尾に追加 is_in_procedure:1 localidlootの末尾に追加 */
+       24:  139:int regist_define(){
+        -:  140:  ID *p;
+       24:  141:  if(is_in_procedure == 1){
+        8:  142:    if(localidloot == NULL){
+        4:  143:      localidloot = tempID;
+        4:  144:      tempID = NULL;
+        4:  145:      return 0;
+        -:  146:    }else{
+        4:  147:      p = localidloot;
+        -:  148:    }
+        -:  149:  }else{
+       16:  150:    if(globalidloot == NULL){
+        5:  151:      globalidloot = tempID;
+        5:  152:      tempID = NULL;
+        5:  153:      return 0;
+        -:  154:    }else{
+       11:  155:      p = globalidloot;
+        -:  156:    }
+        -:  157:  }
+        -:  158:
+       34:  159:  while(p->nextp != NULL){
+       19:  160:    p = p->nextp;
+        -:  161:  }
+       15:  162:  p->nextp = tempID;
+       15:  163:  tempID = NULL;
+       15:  164:  return 0;
+        -:  165:}
+        -:  166:
+       62:  167:ID * add_reference(char *name, int num){
+        -:  168:  ID *idp;
+        -:  169:
+        -:  170:  
+       62:  171:  if(is_in_procedure == 1){
+       22:  172:    idp = search_ID(localidloot, name);
+       22:  173:    if(idp == NULL){
+        8:  174:      idp = search_ID(globalidloot, name);
+        -:  175:    }
+        -:  176:  }else{
+       40:  177:    idp = search_ID(globalidloot, name);
+        -:  178:    
+        -:  179:  }
+       62:  180:  if(idp == NULL){
+    #####:  181:    error("undifined name is referenced.");
+    #####:  182:    return(NULL);
+        -:  183:  }
+       62:  184:  LINE *newref = malloc_LINE();
+       62:  185:  newref->reflinenum = num;
+       62:  186:  LINE *linep = idp->irefp;
+       62:  187:  if(linep == NULL){
+       21:  188:    idp->irefp = newref;
+        -:  189:  }else{
+      148:  190:    while(linep->nextlinep != NULL){
+      107:  191:      linep = linep->nextlinep;
+        -:  192:    }
+       41:  193:    linep->nextlinep = newref;
+        -:  194:  }
+       62:  195:  return idp;
+        -:  196:}
+        -:  197:
+        5:  198:int regist_proc_global(){
+        -:  199:  PROC *proc;
+        5:  200:  proc = malloc_PROC();
+        5:  201:  proc->iidp = globalidloot;
+        -:  202:  PROC *p;
+        5:  203:  p = cridloot;
+        5:  204:  if(p == NULL){
+        3:  205:    cridloot = proc;
+        3:  206:    return 0;
+        -:  207:  }
+        4:  208:  while(p->nextp != NULL){
+        2:  209:    p = p->nextp;
+        -:  210:  }
+        2:  211:  p->nextp = proc;
+        2:  212:  return 0;
+        -:  213:}
+        -:  214:
+        4:  215:int regist_proc_local(){
+        -:  216:  PROC *proc;
+        4:  217:  proc = malloc_PROC();
+        4:  218:  proc->procname = procname_attr;
+        4:  219:  proc->iidp = localidloot;
+        -:  220:  PROC *p;
+        4:  221:  p = cridloot;
+        4:  222:  if(p == NULL){
+        2:  223:    cridloot = proc;
+        2:  224:    localidloot = NULL;
+        2:  225:    return 0;
+        -:  226:  }
+        2:  227:  while(p->nextp != NULL){
+    #####:  228:    p = p->nextp;
+        -:  229:  }
+        2:  230:  p->nextp = proc;
+        2:  231:  localidloot = NULL;
+        2:  232:  return 0;
+        -:  233:}
+        -:  234:
+        -:  235:
+        -:  236:
+       95:  237:ID * search_ID(ID *top, char *name){
+        -:  238:  ID *p;
+       95:  239:  p = top;
+       95:  240:  if(top == NULL){
+       11:  241:    return NULL;
+        -:  242:  }
+      171:  243:  while(p != NULL){
+      149:  244:    if(strcmp(p->name,name) == 0){
+       62:  245:      return p;
+        -:  246:    }
+       87:  247:    p = p->nextp;
+        -:  248:  }
+       22:  249:  return NULL;
+        -:  250:}
+        -:  251:
+        -:  252:/*
+        -:  253: * IDを一つつくって初期化
+        -:  254: * @param [out] 作ったIDへのポインタ
+        -:  255:*/
+       25:  256:ID * malloc_ID(){
+        -:  257:  ID *id;
+       25:  258:  id = malloc(sizeof(ID));
+       25:  259:  if(id == NULL){
+    #####:  260:    error("memory error");
+    #####:  261:    exit(EXIT_FAILURE);
+        -:  262:  }
+       25:  263:  id->name = NULL;
+       25:  264:  id->procname = NULL;
+       25:  265:  id->itp = NULL;
+       25:  266:  id->ispara = 0;
+       25:  267:  id->deflinenum = 0;
+       25:  268:  id->irefp = NULL;
+       25:  269:  id->nextp = NULL;
+       25:  270:  return id;
+        -:  271:}
+        -:  272:
+        -:  273:/*
+        -:  274: * TYPEを一つつくって初期化
+        -:  275: * param [out] 作ったTTYPEへのポインタ
+        -:  276:*/
+       28:  277:TYPE * malloc_TYPE(){
+        -:  278:  TYPE *type;
+       28:  279:  type = malloc(sizeof(TYPE));
+       28:  280:  if(type == NULL){
+    #####:  281:    error("memory error");
+    #####:  282:    exit(EXIT_FAILURE);
+        -:  283:  }
+       28:  284:  type->ttype = 0;
+       28:  285:  type->arraysize = 0;
+       28:  286:  type->etp = NULL;
+       28:  287:  type->paratp = NULL;
+       28:  288:  return type;
+        -:  289:}
+        -:  290:
+        -:  291:/*
+        -:  292: * PROCを一つつくって初期化
+        -:  293: * param [out] 作ったPROCへのポインタ
+        -:  294:*/
+        -:  295:
+        9:  296:PROC * malloc_PROC(){
+        -:  297:  PROC *proc;
+        9:  298:  proc = malloc(sizeof(PROC));
+        9:  299:  if(proc == NULL){
+    #####:  300:    error("memory error");
+    #####:  301:    exit(EXIT_FAILURE);
+        -:  302:  }
+        9:  303:  proc->procname = NULL;
+        9:  304:  proc->iidp = NULL;
+        9:  305:  proc->nextp = NULL;
+        9:  306:  return proc;
+        -:  307:}
+        -:  308:
+       62:  309:LINE * malloc_LINE(){
+        -:  310:  LINE *line;
+       62:  311:  line = malloc(sizeof(LINE));
+       62:  312:  if(line == NULL){
+    #####:  313:    error("memory error");
+    #####:  314:    exit(EXIT_FAILURE);
+        -:  315:  }
+       62:  316:  line->reflinenum = 0;
+       62:  317:  line->nextlinep = NULL;
+       62:  318:  return line;
+        -:  319:}
+        -:  320:
+       25:  321:int check_overloading(char * name){
+        -:  322:  ID * id;
+        -:  323:  char mes[MAXSTRSIZE];
+       25:  324:  if(is_in_procedure == 2 || is_in_procedure == 0){
+       17:  325:    if((id = search_ID(globalidloot,name)) != NULL){
+    #####:  326:      sprintf(mes,"Variable %s is overloading (last difined in Line %d)",name,id->deflinenum);
+    #####:  327:      error(mes);
+    #####:  328:      return ERROR;
+        -:  329:    }
+        8:  330:  }else if(is_in_procedure == 1){
+        8:  331:      if((id = search_ID(localidloot,name)) != NULL){
+    #####:  332:      sprintf(mes,"Variable %s:%s is overloading (last difined in Line %d)",name,id->procname,id->deflinenum);
+    #####:  333:      error(mes);
+    #####:  334:      return ERROR;
+        -:  335:    }
+        -:  336:  }
+       25:  337:  return NORMAL;
+        -:  338:}
+        -:  339:
+        -:  340: 
+        5:  341:void print_cridloot(){
+        -:  342:  PROC *procp;
+        -:  343:  ID *idp;
+        -:  344:  TYPE *typep;
+        -:  345:  char output[MAXSTRSIZE];
+        -:  346:  int NumOfChar;
+        5:  347:  procp = cridloot;
+        -:  348:
+        5:  349:  printf("===============================================================================================\n");
+        5:  350:  printf("Name                          Type                          Def. Ref.                          \n");
+        -:  351:  
+       14:  352:  while(procp != NULL){
+        9:  353:    idp = procp->iidp;
+        -:  354:
+        9:  355:    procp = procp->nextp;
+        9:  356:    int i=0;
+        -:  357:
+       34:  358:    while(idp != NULL){
+       25:  359:      i++;
+        -:  360:      // Name print
+       25:  361:      if(idp->procname == NULL){
+       17:  362:        printf("%-30.30s",idp->name);
+        -:  363:      }else{
+        8:  364:        snprintf(output,MAXSTRSIZE,"%s:%s",idp->name,idp->procname);
+        8:  365:        printf("%-30.30s",output);
+        -:  366:      }
+        -:  367: 
+        -:  368:      // Type print
+       25:  369:      typep = idp->itp;
+       25:  370:      NumOfChar = 0;
+       25:  371:      if(typep->ttype == TPPROC){
+        5:  372:        NumOfChar += printf("%s",get_type_name(typep->ttype));
+        9:  373:        while(typep->paratp != NULL){
+        4:  374:          typep = typep->paratp;
+        4:  375:          NumOfChar += printf("(%s",get_type_name(typep->ttype));
+        4:  376:          if(typep->paratp != NULL){
+    #####:  377:            NumOfChar += printf(",");
+        -:  378:          }
+        4:  379:          NumOfChar += printf(")");
+        -:  380:        }
+       20:  381:      }else if(typep->ttype == TPARRAY){
+    #####:  382:        NumOfChar += printf("%s [%d] of ",get_type_name(typep->ttype),typep->arraysize);
+    #####:  383:        typep = typep->etp;
+    #####:  384:        NumOfChar += printf("%s",get_type_name(typep->ttype));
+        -:  385:      }else{
+       20:  386:        NumOfChar += printf("%s",get_type_name(typep->ttype));
+        -:  387:      }
+      578:  388:      for(int i=NumOfChar;i<30;i++){
+      553:  389:        printf(" ");
+        -:  390:      }
+        -:  391:     
+        -:  392:      // Def. print
+        -:  393:      
+       25:  394:      printf("%-5d",idp->deflinenum);
+        -:  395:
+        -:  396:      // Ref. print
+        -:  397:
+       25:  398:      NumOfChar = 0;
+        -:  399:      LINE *linep;
+       25:  400:      linep = idp->irefp;
+        -:  401:      
+       87:  402:      while(linep != NULL){
+       62:  403:        NumOfChar += printf("%d",linep->reflinenum);
+       62:  404:        linep = linep->nextlinep;
+       62:  405:        if(linep != NULL){
+       41:  406:          NumOfChar += printf(", ");
+        -:  407:        }
+        -:  408:      }
+        -:  409:
+      606:  410:      for(int i=NumOfChar;i<30;i++){
+      581:  411:        printf(" ");
+        -:  412:      }
+        -:  413: 
+        -:  414:      // \n print
+       25:  415:      printf("\n");
+       25:  416:      idp = idp->nextp;
+        -:  417:    }
+        -:  418:  }
+        5:  419:  printf("===============================================================================================\n");
+        5:  420:}
+        -:  421:
+        -:  422:
+        -:  423:
+       29:  424:char * get_type_name(int ttype){
+       29:  425:  return typestr[ttype-9];
+        -:  426:}
+        -:  427:
+    #####:  428:int print_ID_for_debug(ID * loot){
+    #####:  429:  ID *p = loot;
+    #####:  430:  printf("\n*****DEBUG*****\n");
+    #####:  431:  if(p == NULL){
+    #####:  432:    printf("***************\n");
+    #####:  433:    return 0;
+        -:  434:  }
+    #####:  435:  while(p->nextp != NULL){
+    #####:  436:    printf("name:%s proc:%s next:%p\n",p->name,p->procname,p->nextp);
+    #####:  437:    p = p->nextp;
+        -:  438:  }
+    #####:  439:  printf("***************\n");
+    #####:  440:  return 0;
+        -:  441:}
+        -:  442:
+        -:  443:
+        -:  444:
+        -:  445:
+        -:  446:
+        -:  447:
+        -:  448:// ID * add_define(){
+        -:  449://   ID *newdef = malloc(sizeof(ID));
+        -:  450://   newdef->name = tempID->name;
+        -:  451://   newdef->procname = tempID->procname;
+        -:  452://   newdef->itp = tempID->itp;
+        -:  453://   newdef->ispara = tempID->ispara;
+        -:  454://   newdef->deflinenum = tempID->deflinenum;
+        -:  455:
+        -:  456://   ID *p;
+        -:  457://   if(newdef->procname == NULL){
+        -:  458://     p = globalidloot;
+        -:  459://   }else{
+        -:  460://     p = localidloot;
+        -:  461://   }
+        -:  462://   while(p->nextp != NULL){
+        -:  463://     p = p->nextp;
+        -:  464://   }
+        -:  465://   p->nextp = newdef;
+        -:  466:
+        -:  467://   clear_temp();
+        -:  468://   return newdef;
+        -:  469:// }
