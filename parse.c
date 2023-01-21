@@ -42,9 +42,10 @@ int arraysize = 0; /* if type array, size of array */
 
 ID *referenced_val;
 
-int if_true_label = 0;
-int if_false_label = 0;
-int iteration_label = 0;
+int variable_address = 0;
+int is_need_new_address = 0;
+int past_in_is_val = 0;
+
 
 
 int parse_program(void){
@@ -61,7 +62,11 @@ int parse_program(void){
   if(token != TDOT) return(error("Period is not found at the end of program"));
   token = Scan();
   indent_count--;
-  add_utils();
+  asm_return_st();
+  constants_output();
+  outlib();
+  asm_end();
+  
   
   return(NORMAL);
 }
@@ -77,9 +82,10 @@ int parse_block(void){
     
   }
   indent_count--;
+  asm_val(globalidloot);
   regist_proc_global();
 
-  
+  asm_block_start();
   if(parse_compound_statement() == ERROR) return(ERROR);
   return(NORMAL);
 }
@@ -221,12 +227,13 @@ int parse_subprogram_declaration(void){
     is_formal_parameter = 0;
   }
   if(token != TSEMI) return(error("Semicolon is not found"));
-  if(asm_proc_val(localidloot) == ERROR) return(ERROR);
+  
   token = Scan();
   is_variable_declaration = 1;
   if(token == TVAR){
     if(parse_variable_declaration() == ERROR) return(ERROR);
   }
+  if(asm_proc_val(localidloot) == ERROR) return(ERROR);
   is_variable_declaration = 0;
   if(asm_proc_start(localidloot,procname_attr) == ERROR) return(ERROR);
   if(parse_compound_statement() == ERROR) return(ERROR);
@@ -239,10 +246,12 @@ int parse_subprogram_declaration(void){
   }
   procname_attr = NULL;
   is_in_procedure = 0;
+  asm_proc_end();
   return(NORMAL);
 }
 
 int parse_procedure_name(void){
+  ID * id;
   if(token != TNAME) return(error("procedure name is not found"));
   if(is_in_procedure == 2){
     /* サブプログラム宣言のとき */
@@ -253,7 +262,8 @@ int parse_procedure_name(void){
     add_type(temptype);
   }else{
     /* サブプログラム参照のとき */
-    if(add_reference(string_attr,line) == NULL) return(ERROR);
+    if((id=add_reference(string_attr,line)) == NULL) return(ERROR);
+    referenced_val = id;
   }
   token = Scan();
   return(NORMAL);
@@ -353,7 +363,7 @@ int parse_statement(void){
 int parse_condition_statement(void){
   int ttype;
   if(token != TIF) return(error("Keyword 'if' is not found"));
-  
+  asm_if_st();
   token = Scan();
   if((ttype = parse_expression()) == ERROR) return(ERROR);
   if(ttype != TPBOOL){
@@ -367,6 +377,7 @@ int parse_condition_statement(void){
   if(parse_statement() == ERROR) return(ERROR);
 
   if(token == TELSE){
+    asm_else_st();
     indent_count--;
     
     
@@ -375,6 +386,7 @@ int parse_condition_statement(void){
     
     if(parse_statement() == ERROR) return(ERROR);  
   }
+  asm_if_st_end();
   indent_count--;
   return(NORMAL);
 }
@@ -382,19 +394,21 @@ int parse_condition_statement(void){
 int parse_iteration_statement(void){
   int ttype;
   if(token != TWHILE) return(error("Keyword 'while' is not found"));
-  
+  asm_ite_start();
   token = Scan();
   if((ttype = parse_expression()) == ERROR) return(ERROR);
   if(ttype != TPBOOL){
     return(error("in iteration statemente, expression needs return boolean"));
   }
   if(token != TDO) return(error("Keyword 'do' is not found"));
+  asm_ite_cmp();
   
   token = Scan();
   indent_count++;
   
   if(parse_statement() == ERROR) return(ERROR);
   indent_count--;
+  asm_ite_continue();
   return(NORMAL);
 }
 
@@ -415,7 +429,25 @@ int parse_call_statement(void){
   if(token == TLPAREN){
     
     token = Scan();
-    if(parse_expressions() == ERROR) return(ERROR);
+    is_need_new_address = 0;
+    past_in_is_val = 0;
+    if(parse_expression() == ERROR) return(ERROR);
+    if(is_need_new_address <= -1){
+      variable_address = label;
+      label++;
+      asm_parameter_with_newlabel();
+    }
+    while(token == TCOMMA){
+      is_need_new_address = 0;
+      past_in_is_val = 0;
+      token = Scan();
+      if(parse_expression() == ERROR) return(ERROR);
+      if(is_need_new_address <= -1){
+        variable_address = label;
+        label++;
+        asm_parameter_with_newlabel();
+      }
+    }
     if(token != TRPAREN) return(error("Right parenthese is not found"));
     
     token = Scan();
@@ -428,14 +460,15 @@ int parse_expressions(void){
   if(parse_expression() == ERROR) return(ERROR);
   while(token == TCOMMA){
       
-      token = Scan();
-      if(parse_expression() == ERROR) return(ERROR);
-    }
+    token = Scan();
+    if(parse_expression() == ERROR) return(ERROR);
+  }
     return(NORMAL);
 }
 
 int parse_return_statement(void){
   if(token != TRETURN) return(error("Keyword 'return' is not found"));
+  asm_return_st();
   
   token = Scan();
   return(NORMAL);
@@ -462,11 +495,12 @@ int parse_left_part(void){
   return(ttype);
 }
 
-int parse_variable(int isleft){
+/* p:0 right,p:1 left,p:2 formal parameter */
+int parse_variable(int p){
   int ttype = NORMAL;
   int etype;
-  ID * variable_part = referenced_val;
   if((ttype = parse_variable_name()) == ERROR) return(ERROR);
+  ID * variable_part = referenced_val;
   if(token == TLSQPAREN){
     if(ttype != TPARRAY){
       return(error("variable with expression needs type array"));
@@ -479,13 +513,14 @@ int parse_variable(int isleft){
     }
     if(token != TRSQPAREN) return(error("Right squere parenthese is not found"));
 
-    if(isleft == 1){
-      if(asm_ref_lval(variable_part) == ERROR) return(ERROR);
-    }else{
-      if(asm_ref_rval(variable_part) == ERROR) return(ERROR);
-    }
+
     token = Scan();
   }
+  asm_ref_val(variable_part);
+  if(p == 0){
+    asm_param_to_real();
+  }
+  past_in_is_val = 1;
   return(ttype);
 }
 
@@ -495,6 +530,10 @@ int parse_expression(void){
   int Rtype = NORMAL;
   if((Ltype = parse_simple_expression()) == ERROR) return(ERROR);
   while(token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ){
+    if(past_in_is_val == 1){
+      asm_param_to_real();
+    }
+    is_need_new_address = -1;
     if((ope = parse_relational_operator()) == ERROR) return(ERROR);
     if((Rtype = parse_simple_expression()) == ERROR) return(ERROR);
      if(Ltype != Rtype){
@@ -512,10 +551,12 @@ int parse_simple_expression(void){
   int ope;
   int Rtype = NORMAL;
   if(token == TPLUS){
+    is_need_new_address = -1;
     isplusminus = 1;
     
     token = Scan();
   }else if(token == TMINUS){
+    is_need_new_address = -1;
     isplusminus = -1;
     
     token = Scan();
@@ -526,10 +567,17 @@ int parse_simple_expression(void){
       return(error("simple expression needs integer"));
     }
     if(isplusminus == -1){
+    if(past_in_is_val == 1){
+      asm_param_to_real();
+    }
       asm_minus_sign();
     }
   }
   while(token == TPLUS || token == TMINUS || token == TOR){
+    if(past_in_is_val == 1){
+      asm_param_to_real();
+    }
+    is_need_new_address = -1;
     if((ope = parse_additive_operator()) == ERROR) return(ERROR);
     if((Rtype = parse_term()) == ERROR) return(ERROR);
     switch(ope){
@@ -542,7 +590,7 @@ int parse_simple_expression(void){
         break;
       case TOR:
         if(Ltype != TPBOOL || Rtype != TPBOOL){
-          return(error("additive operator or need integer"));
+          return(error("additive operator or need boolean"));
         }
         Ltype = TPBOOL;
         break;
@@ -568,6 +616,10 @@ int parse_term(void){
   int Rtype = NORMAL;
   if((Ltype = parse_factor()) == ERROR) return(ERROR);
   while(token == TSTAR || token == TDIV || token == TAND){
+    if(past_in_is_val == 1){
+      asm_param_to_real();
+    }
+    is_need_new_address = -1;
     if((ope = parse_multiplicative_operator()) == ERROR) return(ERROR);
     if((Rtype = parse_factor()) == ERROR) return(ERROR);
     switch(ope){
@@ -604,7 +656,7 @@ int parse_factor(void){
   int ttype = NORMAL;
   switch(token){
     case TNAME:
-      if((ttype = parse_variable(0)) == ERROR) return(ERROR);
+      if((ttype = parse_variable(2)) == ERROR) return(ERROR);
       break;
     case TNUMBER:
     case TTRUE:
@@ -616,6 +668,7 @@ int parse_factor(void){
       
       token = Scan();
       if((ttype = parse_expression()) == ERROR) return(ERROR);
+      is_need_new_address = -1;
       if(token != TRPAREN) return(error("Right parenthese is not found"));
       
       token = Scan();
@@ -623,11 +676,13 @@ int parse_factor(void){
     case TNOT:
       
       token = Scan();
+      is_need_new_address = -1;
       if((ttype = parse_factor()) == ERROR) return(ERROR);
       break;
     case TINTEGER:
     case TBOOLEAN:
     case TCHAR:
+      is_need_new_address = -1;
       if((ttype = parse_standard_type()) == ERROR) return(ERROR);
       if(token != TLPAREN) return(error("Left paranthese is not found"));
       
@@ -644,25 +699,31 @@ int parse_factor(void){
 }
 
 int parse_constant(void){
+  past_in_is_val = 0;
   int ttype = NORMAL;
   switch(token){
     case TNUMBER:
       ttype = TPINT;
+      asm_number();
       token = Scan();
       break;
     case TFALSE:
       ttype = TPBOOL;
-      
+      asm_false();
       token = Scan();
       break;
     case TTRUE:
       ttype = TPBOOL;
-      
+      asm_true();
       token = Scan();
       break;
     case TSTRING:
       if(strlen(string_attr) == 1){
         ttype = TPCHAR;
+        asm_char();
+      }else{
+        ttype = TPSTR;
+        asm_string();
       }
       token = Scan();
       break;
@@ -771,7 +832,7 @@ int parse_input_statement(void){
   if(token == TLPAREN){
     
     token = Scan();
-    if((ttype = parse_variable(0)) == ERROR) return(ERROR);
+    if((ttype = parse_variable(1)) == ERROR) return(ERROR);
     if(ttype != TPCHAR && ttype != TPINT){
       return(error("read or readln needs integer or char "));
     }
@@ -781,7 +842,7 @@ int parse_input_statement(void){
     }
     while(token == TCOMMA){
       token = Scan();
-      if((ttype = parse_variable(0)) == ERROR) return(ERROR);
+      if((ttype = parse_variable(1)) == ERROR) return(ERROR);
       if(ttype != TPCHAR && ttype != TPINT){
         return(error("read or readln needs integer or char "));
       }
