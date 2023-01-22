@@ -395,8 +395,8 @@ int asm_output_format(int etype, int num){
   fprintf(caslfilep,"\tPOP\tgr1\n");
   fprintf(caslfilep,"\tLAD\tgr2, %d\n",num);
   switch(etype){
-    case TPSTR:
     case TPCHAR:
+    case TPSTR:
       fprintf(caslfilep,"\tCALL\tWRITESTR\n");
       break;
     case TPINT:

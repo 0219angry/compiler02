@@ -45,6 +45,7 @@ ID *referenced_val;
 int variable_address = 0;
 int is_need_new_address = 0;
 int past_in_is_val = 0;
+int is_in_call_st = 0;
 
 
 
@@ -422,7 +423,7 @@ int parse_exit_statement(void){
 int parse_call_statement(void){
   ID * called_proc;
   if(token != TCALL) return(error("Keyword 'call' is not found"));
-  
+  is_in_call_st = 2;
   token = Scan();
   if(parse_procedure_name() == ERROR) return(ERROR);
   called_proc = referenced_val;
@@ -453,6 +454,7 @@ int parse_call_statement(void){
     token = Scan();
   }
   asm_call(called_proc);
+  is_in_call_st = 0;
   return(NORMAL);
 }
 
@@ -530,7 +532,7 @@ int parse_expression(void){
   int Rtype = NORMAL;
   if((Ltype = parse_simple_expression()) == ERROR) return(ERROR);
   while(token == TEQUAL || token == TNOTEQ || token == TLE || token == TLEEQ || token == TGR || token == TGREQ){
-    if(past_in_is_val == 1){
+    if(past_in_is_val == 1 && is_in_call_st == 2){
       asm_param_to_real();
     }
     is_need_new_address = -1;
@@ -567,14 +569,14 @@ int parse_simple_expression(void){
       return(error("simple expression needs integer"));
     }
     if(isplusminus == -1){
-    if(past_in_is_val == 1){
+    if(past_in_is_val == 1 && is_in_call_st == 2){
       asm_param_to_real();
     }
       asm_minus_sign();
     }
   }
   while(token == TPLUS || token == TMINUS || token == TOR){
-    if(past_in_is_val == 1){
+    if(past_in_is_val == 1 && is_in_call_st == 2){
       asm_param_to_real();
     }
     is_need_new_address = -1;
@@ -616,7 +618,7 @@ int parse_term(void){
   int Rtype = NORMAL;
   if((Ltype = parse_factor()) == ERROR) return(ERROR);
   while(token == TSTAR || token == TDIV || token == TAND){
-    if(past_in_is_val == 1){
+    if(past_in_is_val == 1 && is_in_call_st == 2){
       asm_param_to_real();
     }
     is_need_new_address = -1;
@@ -656,7 +658,7 @@ int parse_factor(void){
   int ttype = NORMAL;
   switch(token){
     case TNAME:
-      if((ttype = parse_variable(2)) == ERROR) return(ERROR);
+      if((ttype = parse_variable(is_in_call_st)) == ERROR) return(ERROR);
       break;
     case TNUMBER:
     case TTRUE:
@@ -870,20 +872,18 @@ int parse_output_statement(void){
     
     token = Scan();
     if(parse_output_format() == ERROR) return(ERROR);
-    if(ln == 1){
-      asm_writeln();
-    }
+
     while(token == TCOMMA){
       
       token = Scan();
       if(parse_output_format() == ERROR) return(ERROR);
-      if(ln == 1){
-        asm_writeln();
-      }
     }
     if(token != TRPAREN) return(error("Right paranthese is not found"));
     
     token = Scan();
+  }
+  if(ln == 1){
+    asm_writeln();
   }
   return(NORMAL);
 }
