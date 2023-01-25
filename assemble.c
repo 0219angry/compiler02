@@ -369,6 +369,32 @@ int asm_AND(){
   return 0;
 }
 
+int asm_cast(int from, int to){
+
+  switch(from){
+    case TPINT:
+
+      break;
+    case TPCHAR:
+
+      break;
+    case TPBOOL:
+
+      break;
+    default:
+
+      break;
+  }
+}
+
+int asm_not(){
+  fprintf(caslfilep,"\tPOP\tgr1\n");
+  fprintf(caslfilep,"\tLAD\tgr2, #FFFF\n");
+  fprintf(caslfilep,"\tXOR\tgr1, gr2\n");
+  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+}
+
+
 int asm_call(ID * called){
   fprintf(caslfilep,"\tCALL\t$%s\n",called->name);
   return 0;
@@ -418,6 +444,8 @@ int asm_writeln(){
   fprintf(caslfilep,"\tCALL\tWRITELINE\n");
   return 0;
 }
+
+
 
 int constants_output(){
   CON * top = const_top;
