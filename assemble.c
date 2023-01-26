@@ -176,12 +176,18 @@ int asm_if_st(){
 
 int asm_else_st(){
   fprintf(caslfilep,"\tJUMP\tL%04d\n",lstack->end);
-  fprintf(caslfilep,"L%04d",lstack->f);
+  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->f);
   return 0;
 }
 
 int asm_if_st_end(){
   fprintf(caslfilep,"L%04d",lstack->end);
+  pop();
+  return 0;
+}
+
+int asm_if_without_else(){
+  fprintf(caslfilep,"L%04d",lstack->f);
   pop();
   return 0;
 }
@@ -230,7 +236,7 @@ int asm_false(){
 }
 
 int asm_char(){
-  fprintf(caslfilep,"\tLAD\tgr1, %c\n",string_attr[0]);
+  fprintf(caslfilep,"\tLAD\tgr1, %d\n",string_attr[0]);
   fprintf(caslfilep,"\tPUSH\t0, gr1\n");
   return 0;
 }
@@ -370,7 +376,7 @@ int asm_AND(){
 }
 
 int asm_cast(int from, int to){
-
+  int true_label,end_label;
   switch(from){
     case TPINT:
       switch(to){
@@ -384,9 +390,9 @@ int asm_cast(int from, int to){
           fprintf(caslfilep, "\tPUSH \t0, gr1\n");
           break;
         case TPBOOL:
-          int true_label = label;
+          true_label = label;
           label++;
-          int end_label = label;
+          end_label = label;
           label++;
           fprintf(caslfilep,"\tPOP\tgr1\n");
           fprintf(caslfilep,"\tCPA\tgr1, gr0\n");
@@ -394,7 +400,7 @@ int asm_cast(int from, int to){
           fprintf(caslfilep,"\tLD\tgr1, gr0\n");
           fprintf(caslfilep,"\tPUSH\t0, gr1\n");
           fprintf(caslfilep,"\tJUMP\tL%04d\n",end_label);
-          fprintf(caslfilep,"\tLAD\tgr1, 1\n");
+          fprintf(caslfilep,"L%04d\tLAD\tgr1, 1\n",true_label);
           fprintf(caslfilep,"\tPUSH\t0, gr1\n");
           fprintf(caslfilep,"L%04d\t\t\n",end_label);
           break;
@@ -412,9 +418,9 @@ int asm_cast(int from, int to){
 
           break;
         case TPBOOL:
-          int true_label = label;
+          true_label = label;
           label++;
-          int end_label = label;
+          end_label = label;
           label++;
           fprintf(caslfilep,"\tPOP\tgr1\n");
           fprintf(caslfilep,"\tCPA\tgr1, gr0\n");
@@ -422,7 +428,7 @@ int asm_cast(int from, int to){
           fprintf(caslfilep,"\tLD\tgr1, gr0\n");
           fprintf(caslfilep,"\tPUSH\t0, gr1\n");
           fprintf(caslfilep,"\tJUMP\tL%04d\n",end_label);
-          fprintf(caslfilep,"\tLAD\tgr1, 1\n");
+          fprintf(caslfilep,"L%04d\tLAD\tgr1, 1\n",true_label);
           fprintf(caslfilep,"\tPUSH\t0, gr1\n");
           fprintf(caslfilep,"L%04d\t\t\n",end_label);
           break;
@@ -435,9 +441,10 @@ int asm_cast(int from, int to){
 
       break;
     default:
-      
+
       break;
   }
+  return 0;
 }
 
 int asm_not(){
@@ -445,6 +452,7 @@ int asm_not(){
   fprintf(caslfilep,"\tLAD\tgr2, #FFFF\n");
   fprintf(caslfilep,"\tXOR\tgr1, gr2\n");
   fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+  return 0;
 }
 
 
@@ -475,7 +483,10 @@ int asm_output_format(int etype, int num){
   fprintf(caslfilep,"\tLAD\tgr2, %d\n",num);
   switch(etype){
     case TPCHAR:
+      fprintf(caslfilep,"\tCALL\tWRITECHAR\n");
+      break;
     case TPSTR:
+      printf("testtest\n");
       fprintf(caslfilep,"\tCALL\tWRITESTR\n");
       break;
     case TPINT:

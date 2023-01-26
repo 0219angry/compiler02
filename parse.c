@@ -364,19 +364,20 @@ int parse_statement(void){
 int parse_condition_statement(void){
   int ttype;
   if(token != TIF) return(error("Keyword 'if' is not found"));
-  asm_if_st();
+  
   token = Scan();
   if((ttype = parse_expression()) == ERROR) return(ERROR);
   if(ttype != TPBOOL){
     return(error("in condition statemente, expression needs return boolean"));
   }
+  asm_if_st();
   if(token != TTHEN) return(error("Keyword 'then' is not found"));
   
   token = Scan();
   indent_count++;
   
   if(parse_statement() == ERROR) return(ERROR);
-
+  
   if(token == TELSE){
     asm_else_st();
     indent_count--;
@@ -385,9 +386,13 @@ int parse_condition_statement(void){
     token = Scan();
     indent_count++;
     
-    if(parse_statement() == ERROR) return(ERROR);  
+    if(parse_statement() == ERROR) return(ERROR); 
+    asm_if_st_end(); 
+  }else{
+    asm_if_without_else();
   }
-  asm_if_st_end();
+  
+  
   indent_count--;
   return(NORMAL);
 }
@@ -656,6 +661,7 @@ int parse_term(void){
 
 int parse_factor(void){
   int ttype = NORMAL;
+  int fromtype;
   switch(token){
     case TNAME:
       if((ttype = parse_variable(is_in_call_st)) == ERROR) return(ERROR);
@@ -680,23 +686,29 @@ int parse_factor(void){
       token = Scan();
       is_need_new_address = -1;
       if((ttype = parse_factor()) == ERROR) return(ERROR);
+      asm_not();
       break;
     case TINTEGER:
     case TBOOLEAN:
     case TCHAR:
+      fromtype = ttype;
       is_need_new_address = -1;
       if((ttype = parse_standard_type()) == ERROR) return(ERROR);
       if(token != TLPAREN) return(error("Left paranthese is not found"));
       
       token = Scan();
       if(parse_expression() == ERROR) return(ERROR);
+
+      asm_cast(fromtype, ttype);
       if(token != TRPAREN) return(error("Right paranthese is not found"));
       
       token = Scan();
+
       break;
     default:
       return(error("Factor is not found"));
   }
+  
   return(ttype);
 }
 
@@ -732,6 +744,7 @@ int parse_constant(void){
     default:
       return(error("Constant is not found"));
   }
+  printf("%d",ttype);
   return(ttype);
 }
 
@@ -892,8 +905,7 @@ int parse_output_format(void){
   int etype;
   int output_count = 0;
   if(token == TSTRING){
-    if(parse_constant() == ERROR) return(ERROR);
-    etype = TPSTR;
+    if((etype =parse_constant()) == ERROR) return(ERROR);
   }else{
     if((etype = parse_expression()) == ERROR) return(ERROR);
     if(etype != TPINT && etype != TPCHAR && etype != TPBOOL){
@@ -907,7 +919,7 @@ int parse_output_format(void){
       token = Scan();
     }
   }
-  asm_output_format(etype,output_count);
+  asm_output_format(etype,0);
   return(NORMAL);
 }
 

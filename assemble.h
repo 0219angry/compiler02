@@ -59,6 +59,7 @@ int asm_param_to_real();
 int asm_if_st();
 int asm_else_st();
 int asm_if_st_end();
+int asm_if_without_else();
 
 int asm_ite_start();
 int asm_ite_cmp();
@@ -82,6 +83,9 @@ int asm_OR();
 int asm_MULA();
 int asm_DIVA();
 int asm_AND();
+
+int asm_cast(int from, int to);
+int asm_not();
 
 int asm_call(ID * called);
 int asm_read(ID * ref);
