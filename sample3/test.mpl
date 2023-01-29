@@ -1,5 +1,6 @@
 program test;
+var a : array[10] of integer;
 begin
-  write('a');
-  write('b');
+  a[1] := 1;
+  writeln('a=',a[1])
 end.

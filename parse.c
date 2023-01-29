@@ -190,6 +190,7 @@ int parse_array_type(void){
   if(token != TLSQPAREN) return(error("Left squere parenthese is not found"));
   token = Scan();
   if(token != TNUMBER) return(error("Unsigned integer is not found"));
+  arraysize = num_attr;
   token = Scan();
   if(token != TRSQPAREN) return(error("Left squere parenthese is not found"));
   token = Scan();
@@ -519,6 +520,9 @@ int parse_variable(int p){
       return(error("array number needs type integer"));
     }
     if(token != TRSQPAREN) return(error("Right squere parenthese is not found"));
+
+    ttype = referenced_val->itp->etp->ttype-4;
+    printf("[%d]",ttype);
 
 
     token = Scan();

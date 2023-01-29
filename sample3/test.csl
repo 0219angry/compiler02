@@ -3,18 +3,47 @@ $$test	START
 	CALL	$block%test
 	CALL	FLUSH
 	SVC	0
+$a	DC	0
 $block%test	DS	0
-	LAD	gr1, 97
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, $a
+	POP	gr2
+	LAD	gr3, 10
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, L0001
 	PUSH	0, gr1
 	POP	gr1
 	LAD	gr2, 0
-	CALL	WRITECHAR
-	LAD	gr1, 98
+	CALL	WRITESTR
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, $a
+	POP	gr2
+	LAD	gr3, 10
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
 	PUSH	0, gr1
 	POP	gr1
 	LAD	gr2, 0
-	CALL	WRITECHAR
+	CALL	WRITEINT
+	CALL	WRITELINE
 	RET	
+L0001	DC	'a='
 ; ------------------------
 ; Utility functions
 ; ------------------------

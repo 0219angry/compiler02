@@ -106,7 +106,7 @@ int asm_ref_val(ID * refed){
     fprintf(caslfilep,"\tCPA\tgr2,gr3\n");
     fprintf(caslfilep,"\tJPL\tEROV\n");
     fprintf(caslfilep,"\tADDA\tgr1, gr2\n");
-    fprintf(caslfilep,"\tJOV\tOVF\n");
+    fprintf(caslfilep,"\tJOV\tEOVF\n");
   }
   fprintf(caslfilep,"\tPUSH\t0, gr1\n");
   return 0;
