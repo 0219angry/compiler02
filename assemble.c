@@ -181,20 +181,20 @@ int asm_else_st(){
 }
 
 int asm_if_st_end(){
-  fprintf(caslfilep,"L%04d",lstack->end);
+  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->end);
   pop();
   return 0;
 }
 
 int asm_if_without_else(){
-  fprintf(caslfilep,"L%04d",lstack->f);
+  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->f);
   pop();
   return 0;
 }
 
 int asm_ite_start(){
   push(2);
-  fprintf(caslfilep,"L%04d",lstack->start);
+  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->start);
   return 0;
 }
 
@@ -207,7 +207,7 @@ int asm_ite_cmp(){
 
 int asm_ite_continue(){
   fprintf(caslfilep,"\tJUMP\tL%04d\n",lstack->start);
-  fprintf(caslfilep,"L%04d",lstack->end);
+  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->end);
   pop();
   return 0;
 }
@@ -486,7 +486,6 @@ int asm_output_format(int etype, int num){
       fprintf(caslfilep,"\tCALL\tWRITECHAR\n");
       break;
     case TPSTR:
-      printf("testtest\n");
       fprintf(caslfilep,"\tCALL\tWRITESTR\n");
       break;
     case TPINT:

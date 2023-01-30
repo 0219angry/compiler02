@@ -522,7 +522,6 @@ int parse_variable(int p){
     if(token != TRSQPAREN) return(error("Right squere parenthese is not found"));
 
     ttype = referenced_val->itp->etp->ttype-4;
-    printf("[%d]",ttype);
 
 
     token = Scan();
@@ -718,6 +717,7 @@ int parse_factor(void){
 
 int parse_constant(void){
   past_in_is_val = 0;
+  is_need_new_address = -1;
   int ttype = NORMAL;
   switch(token){
     case TNUMBER:
@@ -748,7 +748,7 @@ int parse_constant(void){
     default:
       return(error("Constant is not found"));
   }
-  printf("%d",ttype);
+
   return(ttype);
 }
 
