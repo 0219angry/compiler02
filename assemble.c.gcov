@@ -1,0 +1,577 @@
+        -:    0:Source:assemble.c
+        -:    0:Graph:assemble.gcno
+        -:    0:Data:assemble.gcda
+        -:    0:Runs:1
+        -:    1:#include "token-list.h"
+        -:    2:
+        -:    3:int if_true_label;
+        -:    4:int if_false_label;
+        -:    5:
+        -:    6:LSTACK * lstack = NULL;
+        -:    7:extern int variable_address;
+        -:    8:extern int is_need_new_address;
+        -:    9:
+        -:   10:char programname_attr[MAXSTRSIZE];
+        -:   11:CON * const_top = NULL;
+        -:   12:
+        -:   13:
+        1:   14:int asm_start(char *programname){
+        1:   15:  strcpy(programname_attr,programname);
+        1:   16:  fprintf(caslfilep,"$$%s\tSTART\t\n",programname);
+        1:   17:  fprintf(caslfilep,"\tLAD\tgr0, 0\n");
+        1:   18:  fprintf(caslfilep,"\tCALL\t$block%%%s\n",programname);
+        1:   19:  fprintf(caslfilep,"\tCALL\tFLUSH\n");
+        1:   20:  fprintf(caslfilep,"\tSVC\t0\n");
+        1:   21:  return 0;
+        -:   22:}
+        1:   23:int asm_end(){
+        1:   24:  fprintf(caslfilep,"\tEND\t\n");
+        1:   25:  return 0;
+        -:   26:}
+        -:   27:
+        1:   28:int asm_return_st(){
+        1:   29:  fprintf(caslfilep,"\tRET\t\n");
+        1:   30:  return 0;
+        -:   31:}
+        -:   32:
+        1:   33:int asm_val(ID * globalidloot){
+        1:   34:  ID * id = globalidloot;
+       10:   35:  while(id != NULL){
+        9:   36:    switch((id->itp)->ttype){
+        2:   37:      case TPPROC:
+        2:   38:        break;
+        4:   39:      case TPINT:
+        -:   40:      case TPCHAR:
+        -:   41:      case TPBOOL:
+        4:   42:        fprintf(caslfilep,"$%s\tDC\t0\n",id->name);
+        4:   43:        break;
+        3:   44:      case TPARRAY:
+        3:   45:        fprintf(caslfilep,"$%s\tDS\t%d\n",id->name,id->itp->arraysize);
+        3:   46:        break;
+        -:   47:    }
+        9:   48:    id = id->nextp;
+        -:   49:  }
+        1:   50:  return 0;
+        -:   51:}
+        -:   52:
+        2:   53:int asm_proc_val(ID * localidloot){
+        2:   54:  ID * id = localidloot;
+        7:   55:  while(id != NULL){
+        5:   56:    switch((id->itp)->ttype){
+        5:   57:      case TPINT:
+        -:   58:      case TPCHAR:
+        -:   59:      case TPBOOL:
+        -:   60:      case TPARRAY:
+        5:   61:        fprintf(caslfilep,"$%s%%%s\tDC\t0\n",id->name,id->procname);
+        5:   62:        break;
+        -:   63:      
+    #####:   64:      default:
+    #####:   65:        return(error("forbidden type."));
+        -:   66:    }
+        5:   67:    id = id->nextp;
+        -:   68:  }
+        2:   69:  return 0;
+        -:   70:}
+        -:   71:
+        2:   72:int asm_proc_start(ID * localidloot,char * procname){
+        2:   73:  ID * idp = localidloot;
+        2:   74:  fprintf(caslfilep,"$%s\tDS\t0\n",procname);
+        2:   75:    fprintf(caslfilep,"\tPOP\tgr2\n");
+        2:   76:    ID *bp = NULL;
+        7:   77:    while(bp != localidloot){
+        9:   78:      while(idp->nextp != bp){
+        4:   79:        idp = idp->nextp;
+        -:   80:      }
+        5:   81:      if(idp->ispara == 1){
+        4:   82:        fprintf(caslfilep,"\tPOP\tgr1\n");
+        4:   83:        fprintf(caslfilep,"\tST\tgr1, $%s%%%s\n",idp->name,idp->procname);
+        -:   84:      }
+        5:   85:      bp = idp;
+        5:   86:      idp = localidloot;
+        -:   87:    }
+        2:   88:    fprintf(caslfilep,"\tPUSH\t0, gr2\n");
+        2:   89:  return 0;
+        -:   90:}
+        -:   91:
+        2:   92:int asm_proc_end(){
+        2:   93:  fprintf(caslfilep,"\tRET\t\n");
+        2:   94:  return 0;
+        -:   95:}
+        -:   96:
+        1:   97:int asm_block_start(){
+        1:   98:  fprintf(caslfilep,"$block%%%s\tDS\t0\n",programname_attr);
+        1:   99:  return 0;
+        -:  100:}
+        -:  101:
+       72:  102:int asm_ref_val(ID * refed,int isarrayexp){
+       72:  103:  if(refed->ispara == 1){
+       13:  104:    fprintf(caslfilep,"\tLD\tgr1, $%s%%%s\n",refed->name,refed->procname);
+       59:  105:  }else if(refed->procname != NULL){
+        6:  106:    fprintf(caslfilep,"\tLAD\tgr1, $%s%%%s\n",refed->name,refed->procname);
+        -:  107:  }else{
+       53:  108:    fprintf(caslfilep,"\tLAD\tgr1, $%s\n",refed->name);
+        -:  109:  }
+       72:  110:  if((refed->itp)->ttype ==TPARRAY && isarrayexp == 1){
+        -:  111:    //array型のときの処理
+       22:  112:    fprintf(caslfilep,"\tPOP\tgr2\n"); // gr2 is index number.
+       22:  113:    fprintf(caslfilep,"\tLAD\tgr3, %d\n",(refed->itp)->arraysize); // gr3 is max index number.
+       22:  114:    fprintf(caslfilep,"\tCPA\tgr2,gr3\n");
+       22:  115:    fprintf(caslfilep,"\tJPL\tEROV\n");
+       22:  116:    fprintf(caslfilep,"\tADDA\tgr1, gr2\n");
+       22:  117:    fprintf(caslfilep,"\tJOV\tEOVF\n");
+        -:  118:  }
+       72:  119:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+       72:  120:  return 0;
+        -:  121:}
+        -:  122:
+        -:  123:
+        -:  124:
+       37:  125:int asm_param_to_real(){
+       37:  126:  fprintf(caslfilep,"\tPOP\tgr1\n");
+       37:  127:  fprintf(caslfilep,"\tLD\tgr1, 0, gr1\n");
+       37:  128:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+       37:  129:  return 0;
+        -:  130:}
+        -:  131:
+        -:  132:
+        -:  133:
+        4:  134:int asm_parameter_with_newlabel(){
+        4:  135:  CON * top = const_top;
+        -:  136:  CON * temp;
+        -:  137:  char * string;
+        4:  138:  if((string = malloc(sizeof(char)*(MAXSTRSIZE+12))) == NULL){
+    #####:  139:    return error("malloc error");
+        -:  140:  }
+        4:  141:  temp = malloc_CON();
+        4:  142:  sprintf(string,"L%04d\tDC\t0\n",variable_address);
+        4:  143:  label++;
+        4:  144:  temp->string = string;
+        4:  145:  if(top == NULL){
+    #####:  146:    const_top = temp;
+    #####:  147:    return 0;
+        -:  148:  }
+       32:  149:  while(top->nextp != NULL){
+       28:  150:    top = top->nextp;
+        -:  151:  }
+        4:  152:  top->nextp = temp;
+        4:  153:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        4:  154:  fprintf(caslfilep,"\tLAD\tgr2, L%04d\n",variable_address);
+        4:  155:  fprintf(caslfilep,"\tST\tgr1, 0, gr2\n");
+        4:  156:  fprintf(caslfilep,"\tPUSH\t0,gr2\n");
+        4:  157:  variable_address = 0;
+        4:  158:  is_need_new_address = 0;
+        4:  159:  return 0;
+        -:  160:}
+        -:  161:
+        4:  162:int asm_if_st(){
+        4:  163:  push(1);
+        4:  164:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        4:  165:  fprintf(caslfilep,"\tCPA\tgr1, gr0\n");
+        4:  166:  fprintf(caslfilep,"\tJZE\tL%04d\n",lstack->f);
+        4:  167:  return 0;
+        -:  168:}
+        -:  169:
+        3:  170:int asm_else_st(){
+        3:  171:  fprintf(caslfilep,"\tJUMP\tL%04d\n",lstack->end);
+        3:  172:  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->f);
+        3:  173:  return 0;
+        -:  174:}
+        -:  175:
+        3:  176:int asm_if_st_end(){
+        3:  177:  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->end);
+        3:  178:  pop();
+        3:  179:  return 0;
+        -:  180:}
+        -:  181:
+        1:  182:int asm_if_without_else(){
+        1:  183:  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->f);
+        1:  184:  pop();
+        1:  185:  return 0;
+        -:  186:}
+        -:  187:
+        2:  188:int asm_ite_start(){
+        2:  189:  push(2);
+        2:  190:  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->start);
+        2:  191:  return 0;
+        -:  192:}
+        -:  193:
+        2:  194:int asm_ite_cmp(){
+        2:  195:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        2:  196:  fprintf(caslfilep,"\tCPA\tgr1, gr0\n");
+        2:  197:  fprintf(caslfilep,"\tJZE\tL%04d\n",lstack->end);
+        2:  198:  return 0;
+        -:  199:}
+        -:  200:
+        2:  201:int asm_ite_continue(){
+        2:  202:  fprintf(caslfilep,"\tJUMP\tL%04d\n",lstack->start);
+        2:  203:  fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->end);
+        2:  204:  pop();
+        2:  205:  return 0;
+        -:  206:}
+        -:  207:
+        -:  208:
+    #####:  209:int asm_array_count(){
+    #####:  210:  return 0;
+        -:  211:}
+        -:  212:
+       72:  213:int asm_number(){
+       72:  214:  fprintf(caslfilep,"\tLAD\tgr1, %d\n",num_attr);
+       72:  215:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+       72:  216:  return 0;
+        -:  217:}
+        -:  218:
+       12:  219:int asm_true(){
+       12:  220:  fprintf(caslfilep,"\tLAD\tgr1, 1\n");
+       12:  221:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+       12:  222:  return 0;
+        -:  223:}
+        -:  224:
+        8:  225:int asm_false(){
+        8:  226:  fprintf(caslfilep,"\tLAD\tgr1, 0\n");
+        8:  227:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        8:  228:  return 0;
+        -:  229:}
+        -:  230:
+       12:  231:int asm_char(){
+       12:  232:  fprintf(caslfilep,"\tLAD\tgr1, %d\n",string_attr[0]);
+       12:  233:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+       12:  234:  return 0;
+        -:  235:}
+        -:  236:
+       37:  237:int asm_string(){
+        -:  238:  CON * temp;
+       37:  239:  CON * top = const_top;
+        -:  240:  char * string;
+       37:  241:  fprintf(caslfilep,"\tLAD\tgr1, L%04d\n",label);
+       37:  242:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+       37:  243:  if((string = malloc(sizeof(char)*(MAXSTRSIZE+12))) == NULL){
+    #####:  244:    return error("malloc error");
+        -:  245:  }
+       37:  246:  temp = malloc_CON();
+       37:  247:  sprintf(string,"L%04d\tDC\t'%s'\n",label,string_attr);
+       37:  248:  label++;
+       37:  249:  temp->string = string;
+       37:  250:  if(top == NULL){
+        1:  251:    const_top = temp;
+        1:  252:    return 0;
+        -:  253:  }
+      788:  254:  while(top->nextp != NULL){
+      752:  255:    top = top->nextp;
+        -:  256:  }
+       36:  257:  top->nextp = temp;
+       36:  258:  return 0;
+        -:  259:}
+        -:  260:
+       24:  261:int asm_assign(){
+       24:  262:  fprintf(caslfilep,"\tPOP\tgr2\n");
+       24:  263:  fprintf(caslfilep,"\tPOP\tgr1\n");
+       24:  264:  fprintf(caslfilep,"\tST\tgr2,0,gr1\n");
+       24:  265:  return 0;
+        -:  266:}
+        -:  267:
+       17:  268:int asm_expression(int opr){
+       17:  269:  if_true_label = label;
+       17:  270:  label++;
+       17:  271:  if_false_label = label;
+       17:  272:  label++;
+       17:  273:  fprintf(caslfilep,"\tPOP\tgr2\n");
+       17:  274:  fprintf(caslfilep,"\tPOP\tgr1\n");
+       17:  275:  fprintf(caslfilep,"\tCPA\tgr1, gr2\n");
+       17:  276:  switch(opr){
+        6:  277:    case TEQUAL:
+        6:  278:      fprintf(caslfilep,"\tJNZ\tL%04d\n",if_false_label);
+        6:  279:      break;
+        2:  280:    case TNOTEQ:
+        2:  281:      fprintf(caslfilep,"\tJZE\tL%04d\n",if_false_label);
+        2:  282:      break;
+        2:  283:    case TLE:
+        2:  284:      fprintf(caslfilep,"\tJPL\tL%04d\n",if_false_label);
+        2:  285:      fprintf(caslfilep,"\tJZE\tL%04d\n",if_false_label);
+        2:  286:      break;
+        2:  287:    case TLEEQ:
+        2:  288:      fprintf(caslfilep,"\tJPL\tL%04d\n",if_false_label);
+        2:  289:      break;
+        2:  290:    case TGR:
+        2:  291:      fprintf(caslfilep,"\tJMI\tL%04d\n",if_false_label);
+        2:  292:      fprintf(caslfilep,"\tJZE\tL%04d\n",if_false_label);
+        2:  293:      break;
+        3:  294:    case TGREQ:
+        3:  295:      fprintf(caslfilep,"\tJMI\tL%04d\n",if_false_label);
+        3:  296:      break;
+    #####:  297:    default:
+    #####:  298:      error("unknown relational operand");
+        -:  299:
+        -:  300:  }
+       17:  301:  fprintf(caslfilep,"\tLAD\tgr1, 1\n");
+       17:  302:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+       17:  303:  fprintf(caslfilep,"\tJUMP\tL%04d\n",if_true_label);
+        -:  304:
+       17:  305:  fprintf(caslfilep,"L%04d\tLD\tgr1, gr0\n",if_false_label);
+       17:  306:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+       17:  307:  fprintf(caslfilep,"L%04d\tDS\t0\n",if_true_label);
+       17:  308:  return 0;
+        -:  309:}
+        -:  310:
+        1:  311:int asm_minus_sign(){
+        1:  312:  fprintf(caslfilep,"\tLAD\tgr1,-1\n");
+        1:  313:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        1:  314:  asm_MULA();
+        1:  315:  return 0;
+        -:  316:}
+        -:  317:
+        1:  318:int asm_ADDA(){
+        1:  319:  fprintf(caslfilep,"\tPOP\tgr2\n");
+        1:  320:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        1:  321:  fprintf(caslfilep,"\tADDA\tgr1, gr2\n");
+        1:  322:  fprintf(caslfilep,"\tJOV\tEOVF\n");
+        1:  323:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        1:  324:  return 0;
+        -:  325:}
+        -:  326:
+        6:  327:int asm_SUBA(){
+        6:  328:  fprintf(caslfilep,"\tPOP\tgr2\n");
+        6:  329:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        6:  330:  fprintf(caslfilep,"\tSUBA\tgr1, gr2\n");
+        6:  331:  fprintf(caslfilep,"\tJOV\tEOVF\n");
+        6:  332:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        6:  333:  return 0;
+        -:  334:}
+        -:  335:
+        4:  336:int asm_OR(){
+        4:  337:  fprintf(caslfilep,"\tPOP\tgr2\n");
+        4:  338:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        4:  339:  fprintf(caslfilep,"\tOR\tgr1, gr2\n");
+        4:  340:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        4:  341:  return 0;
+        -:  342:}
+        -:  343:
+        2:  344:int asm_MULA(){
+        2:  345:  fprintf(caslfilep,"\tPOP\tgr2\n");
+        2:  346:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        2:  347:  fprintf(caslfilep,"\tMULA\tgr1, gr2\n");
+        2:  348:  fprintf(caslfilep,"\tJOV\tEOVF\n");
+        2:  349:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        2:  350:  return 0;
+        -:  351:}
+        -:  352:
+        1:  353:int asm_DIVA(){
+        1:  354:  fprintf(caslfilep,"\tPOP\tgr2\n");
+        1:  355:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        1:  356:  fprintf(caslfilep,"\tOR\tgr1,gr1\n");
+        1:  357:  fprintf(caslfilep,"\tJZE\tE0DIV\n");
+        1:  358:  fprintf(caslfilep,"\tDIVA\tgr1, gr2\n");
+        1:  359:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        1:  360:  return 0;
+        -:  361:}
+        -:  362:
+        4:  363:int asm_AND(){
+        4:  364:  fprintf(caslfilep,"\tPOP\tgr2\n");
+        4:  365:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        4:  366:  fprintf(caslfilep,"\tAND\tgr1, gr2\n");
+        4:  367:  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        4:  368:  return 0;
+        -:  369:}
+        -:  370:
+       11:  371:int asm_cast(int from, int to){
+        -:  372:  int true_label,end_label;
+       11:  373:  switch(from){
+        4:  374:    case TPINT:
+        -:  375:      switch(to){
+        1:  376:        case TPINT:
+        -:  377:
+        1:  378:          break;
+        2:  379:        case TPCHAR:
+        2:  380:          fprintf(caslfilep, "\tPOP \tgr1\n");
+        2:  381:          fprintf(caslfilep, "\tLAD \tgr2, #007F\n");
+        2:  382:          fprintf(caslfilep, "\tAND \tgr1, gr2\n");
+        2:  383:          fprintf(caslfilep, "\tPUSH \t0, gr1\n");
+        2:  384:          break;
+        1:  385:        case TPBOOL:
+        1:  386:          true_label = label;
+        1:  387:          label++;
+        1:  388:          end_label = label;
+        1:  389:          label++;
+        1:  390:          fprintf(caslfilep,"\tPOP\tgr1\n");
+        1:  391:          fprintf(caslfilep,"\tCPA\tgr1, gr0\n");
+        1:  392:          fprintf(caslfilep,"\tJNZ\tL%04d\n",true_label);
+        1:  393:          fprintf(caslfilep,"\tLD\tgr1, gr0\n");
+        1:  394:          fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        1:  395:          fprintf(caslfilep,"\tJUMP\tL%04d\n",end_label);
+        1:  396:          fprintf(caslfilep,"L%04d\tLAD\tgr1, 1\n",true_label);
+        1:  397:          fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        1:  398:          fprintf(caslfilep,"L%04d\tDS\t0\n",end_label);
+        1:  399:          break;
+    #####:  400:        default:
+        -:  401:
+    #####:  402:          break;
+        -:  403:      }
+        4:  404:      break;
+        4:  405:    case TPCHAR:
+        -:  406:      switch(to){
+        2:  407:        case TPINT:
+        -:  408:
+        2:  409:          break;
+        1:  410:        case TPCHAR:
+        -:  411:
+        1:  412:          break;
+        1:  413:        case TPBOOL:
+        1:  414:          true_label = label;
+        1:  415:          label++;
+        1:  416:          end_label = label;
+        1:  417:          label++;
+        1:  418:          fprintf(caslfilep,"\tPOP\tgr1\n");
+        1:  419:          fprintf(caslfilep,"\tCPA\tgr1, gr0\n");
+        1:  420:          fprintf(caslfilep,"\tJNZ\tL%04d\n",true_label);
+        1:  421:          fprintf(caslfilep,"\tLD\tgr1, gr0\n");
+        1:  422:          fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        1:  423:          fprintf(caslfilep,"\tJUMP\tL%04d\n",end_label);
+        1:  424:          fprintf(caslfilep,"L%04d\tLAD\tgr1, 1\n",true_label);
+        1:  425:          fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        1:  426:          fprintf(caslfilep,"L%04d\tDS\t0\n",end_label);
+        1:  427:          break;
+    #####:  428:        default:
+        -:  429:
+    #####:  430:          break;
+        -:  431:      }
+        4:  432:      break;
+        3:  433:    case TPBOOL:
+        -:  434:
+        3:  435:      break;
+    #####:  436:    default:
+        -:  437:
+    #####:  438:      break;
+        -:  439:  }
+       11:  440:  return 0;
+        -:  441:}
+        -:  442:
+        2:  443:int asm_not(int ttype){
+        2:  444:  switch(ttype){
+        1:  445:    case TPINT:
+        -:  446:    case TPCHAR:
+        -:  447:    case TPARRAYINT:
+        -:  448:    case TPARRAYCHAR:
+        1:  449:      fprintf(caslfilep,"\tPOP\tgr1\n");
+        1:  450:      fprintf(caslfilep,"\tLAD\tgr2, #FFFF\n");
+        1:  451:      fprintf(caslfilep,"\tXOR\tgr1, gr2\n");
+        1:  452:      fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        1:  453:      break;
+        1:  454:    case TPBOOL:
+        -:  455:    case TPARRAYBOOL:
+        1:  456:      push(1);
+        1:  457:      fprintf(caslfilep,"\tPOP\tgr1\n");
+        1:  458:      fprintf(caslfilep,"\tCPA\tgr1, gr0\n");
+        1:  459:      fprintf(caslfilep,"\tJZE\tL%04d\n",lstack->t);
+        1:  460:      fprintf(caslfilep,"\tLAD\tgr1, 0\n");
+        1:  461:      fprintf(caslfilep,"\tJUMP\tL%04d\n",lstack->end);
+        1:  462:      fprintf(caslfilep,"L%04d\tLAD\tgr1, 1\n",lstack->t);
+        1:  463:      fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->end);
+        1:  464:      fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+        1:  465:      pop();
+        -:  466:  }
+        -:  467:  
+        2:  468:  return 0;
+        -:  469:}
+        -:  470:
+        -:  471:
+        5:  472:int asm_call(ID * called){
+        5:  473:  fprintf(caslfilep,"\tCALL\t$%s\n",called->name);
+        5:  474:  return 0;
+        -:  475:}
+        -:  476:
+        2:  477:int asm_read(ID * refed){
+        2:  478:  fprintf(caslfilep,"\tPOP\tgr1\n");
+        2:  479:  if((refed->itp)->ttype == TPINT){
+        1:  480:    fprintf(caslfilep,"\tCALL\tREADINT\n");
+        1:  481:  }else if((refed->itp)->ttype == TPCHAR){
+        1:  482:    fprintf(caslfilep,"\tCALL\tREADCHAR\n");
+        -:  483:  }else{
+    #####:  484:    error("Couldn't read type read");
+        -:  485:  }
+        2:  486:  return 0;
+        -:  487:}
+        -:  488:
+        2:  489:int asm_readln(){
+        2:  490:  fprintf(caslfilep,"\tCALL\tREADLINE\n");
+        2:  491:  return 0;
+        -:  492:}
+        -:  493:
+       88:  494:int asm_output_format(int etype, int num){
+       88:  495:  fprintf(caslfilep,"\tPOP\tgr1\n");
+       88:  496:  fprintf(caslfilep,"\tLAD\tgr2, %d\n",num);
+       88:  497:  switch(etype){
+       13:  498:    case TPCHAR:
+       13:  499:      fprintf(caslfilep,"\tCALL\tWRITECHAR\n");
+       13:  500:      break;
+       37:  501:    case TPSTR:
+       37:  502:      fprintf(caslfilep,"\tCALL\tWRITESTR\n");
+       37:  503:      break;
+       14:  504:    case TPINT:
+       14:  505:      fprintf(caslfilep,"\tCALL\tWRITEINT\n");
+       14:  506:      break;
+       24:  507:    case TPBOOL:
+       24:  508:      fprintf(caslfilep,"\tCALL\tWRITEBOOL\n");
+       24:  509:      break;
+        -:  510:  }
+       88:  511:  return 0;
+        -:  512:}
+        -:  513:
+        -:  514:
+        -:  515:
+       35:  516:int asm_writeln(){
+       35:  517:  fprintf(caslfilep,"\tCALL\tWRITELINE\n");
+       35:  518:  return 0;
+        -:  519:}
+        -:  520:
+        -:  521:
+        -:  522:
+        1:  523:int constants_output(){
+        1:  524:  CON * top = const_top;
+        -:  525:
+       42:  526:  while(top != NULL){
+       41:  527:    fprintf(caslfilep,"%s",top->string);
+       41:  528:    top = top->nextp;
+        -:  529:  }
+        1:  530:  return 0;
+        -:  531:}
+        -:  532:
+       41:  533:CON * malloc_CON(){
+        -:  534:  CON * temp;
+       41:  535:  temp = malloc(sizeof(CON));
+       41:  536:  if(temp == NULL){
+    #####:  537:    error("malloc error");
+    #####:  538:    exit(EXIT_FAILURE);
+        -:  539:  }
+       41:  540:  temp->string = NULL;
+       41:  541:  temp->nextp = NULL;
+       41:  542:  return temp;
+        -:  543:}
+        -:  544:
+        -:  545:
+        -:  546:/* ラベル管理用のスタックに追加 */
+        -:  547:/* type 1:if文,2:while文*/
+        7:  548:LSTACK * push(int type){
+        -:  549:  LSTACK * new;
+        7:  550:  if((new=malloc(sizeof(LSTACK)))==NULL){
+    #####:  551:    error("malloc error");
+    #####:  552:    exit(EXIT_FAILURE);
+        -:  553:  }
+        7:  554:  if(type == 1){
+        5:  555:    new->t = label;
+        5:  556:    new->f = label+1;
+        5:  557:    new->end = label+2;
+        5:  558:    new->p = lstack;
+        5:  559:    label = label+3;
+        2:  560:  }else if(type == 2){
+        2:  561:    new->start = label;
+        2:  562:    new->end = label+1;
+        2:  563:    new->p = lstack;
+        2:  564:    label = label+2;
+        -:  565:  }
+        7:  566:  lstack = new;
+        7:  567:  return lstack;
+        -:  568:}
+        -:  569:
+        7:  570:LSTACK * pop(){
+        7:  571:  lstack = lstack->p;
+        7:  572:  return lstack;
+        -:  573:}

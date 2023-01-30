@@ -78,7 +78,7 @@ int main(int nc, char *np[]) {
 }
 
 int error(char *mes) {
-	printf("\n ERROR: %s\n", mes);
+	printf("\n ERROR: %s(line:%d)\n", mes,get_linenum());
 	end_scan();
   return ERROR;
 }

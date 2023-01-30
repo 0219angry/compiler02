@@ -31,7 +31,8 @@ $keisan	DS	0
 	JUMP	L0001
 L0002	LD	gr1, gr0
 	PUSH	0, gr1
-L0001	POP	gr1
+L0001	DS	0
+	POP	gr1
 	CPA	gr1, gr0
 	JZE	L0004
 	LD	gr1, $n%keisan
@@ -69,7 +70,8 @@ L0004	DS	0
 	JUMP	L0006
 L0007	LD	gr1, gr0
 	PUSH	0, gr1
-L0006	POP	gr1
+L0006	DS	0
+	POP	gr1
 	CPA	gr1, gr0
 	JZE	L0009
 	LD	gr1, $n%keisan
@@ -107,7 +109,8 @@ L0009	DS	0
 	JUMP	L0011
 L0012	LD	gr1, gr0
 	PUSH	0, gr1
-L0011	POP	gr1
+L0011	DS	0
+	POP	gr1
 	CPA	gr1, gr0
 	JZE	L0014
 	LD	gr1, $n%keisan
@@ -145,7 +148,8 @@ L0014	DS	0
 	JUMP	L0016
 L0017	LD	gr1, gr0
 	PUSH	0, gr1
-L0016	POP	gr1
+L0016	DS	0
+	POP	gr1
 	CPA	gr1, gr0
 	JZE	L0019
 	LD	gr1, $n%keisan
@@ -170,7 +174,86 @@ L0019	DS	0
 L0015	DS	0
 L0010	DS	0
 L0005	DS	0
-	LD	gr1, $n%keisan
+	RET	
+$num%print	DC	0
+$i%print	DC	0
+$print	DS	0
+	POP	gr2
+	POP	gr1
+	ST	gr1, $num%print
+	PUSH	0, gr2
+	LAD	gr1, $i%print
+	PUSH	0, gr1
+	LAD	gr1, 4
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+L0021	DS	0
+	LAD	gr1, $i%print
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JMI	L0024
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0023
+L0024	LD	gr1, gr0
+	PUSH	0, gr1
+L0023	DS	0
+	POP	gr1
+	CPA	gr1, gr0
+	JZE	L0022
+	LAD	gr1, 91
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, 4
+	PUSH	0, gr1
+	LAD	gr1, $i%print
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	SUBA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEINT
+	LAD	gr1, 93
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, 4
+	PUSH	0, gr1
+	LAD	gr1, $i%print
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	SUBA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LD	gr1, $num%print
+	POP	gr2
+	LAD	gr3, 5
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
 	PUSH	0, gr1
 	POP	gr1
 	LD	gr1, 0, gr1
@@ -178,31 +261,74 @@ L0005	DS	0
 	POP	gr1
 	LAD	gr2, 0
 	CALL	WRITEINT
-	CALL	WRITELINE
+	LAD	gr1, 32
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, $i%print
+	PUSH	0, gr1
+	LAD	gr1, $i%print
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	SUBA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	JUMP	L0021
+L0022	DS	0
 	RET	
 $i	DC	0
 $j	DC	0
 $a	DC	0
 $b	DC	0
-$arrayi	DC	0
-$arraya	DC	0
-$arrayb	DC	0
+$arrayi	DS	5
+$arraya	DS	10
+$arrayb	DS	8
 $block%test	DS	0
-	LAD	gr1, $i
+	LAD	gr1, L0025
 	PUSH	0, gr1
-	LAD	gr1, 10
-	PUSH	0, gr1
-	POP	gr2
 	POP	gr1
-	ST	gr2,0,gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
 	LAD	gr1, $j
 	PUSH	0, gr1
-	LAD	gr1, 10
-	PUSH	0, gr1
-	POP	gr2
 	POP	gr1
-	ST	gr2,0,gr1
-	LAD	gr1, L0021
+	CALL	READINT
+	CALL	READLINE
+	LAD	gr1, L0026
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, $a
+	PUSH	0, gr1
+	POP	gr1
+	CALL	READCHAR
+	CALL	READLINE
+	LAD	gr1, L0027
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, $a
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	CALL	WRITELINE
+	LAD	gr1, L0028
 	PUSH	0, gr1
 	POP	gr1
 	LAD	gr2, 0
@@ -215,7 +341,7 @@ $block%test	DS	0
 	POP	gr1
 	LAD	gr2, 0
 	CALL	WRITEINT
-	LAD	gr1, L0022
+	LAD	gr1, L0029
 	PUSH	0, gr1
 	POP	gr1
 	LAD	gr2, 0
@@ -236,11 +362,11 @@ $block%test	DS	0
 	LAD	gr1, 1
 	PUSH	0, gr1
 	POP	gr1
-	LAD	gr2, L0023
+	LAD	gr2, L0030
 	ST	gr1, 0, gr2
 	PUSH	0,gr2
 	CALL	$keisan
-	LAD	gr1, L0025
+	LAD	gr1, L0032
 	PUSH	0, gr1
 	POP	gr1
 	LAD	gr2, 0
@@ -261,11 +387,11 @@ $block%test	DS	0
 	LAD	gr1, 2
 	PUSH	0, gr1
 	POP	gr1
-	LAD	gr2, L0026
+	LAD	gr2, L0033
 	ST	gr1, 0, gr2
 	PUSH	0,gr2
 	CALL	$keisan
-	LAD	gr1, L0028
+	LAD	gr1, L0035
 	PUSH	0, gr1
 	POP	gr1
 	LAD	gr2, 0
@@ -286,11 +412,11 @@ $block%test	DS	0
 	LAD	gr1, 3
 	PUSH	0, gr1
 	POP	gr1
-	LAD	gr2, L0029
+	LAD	gr2, L0036
 	ST	gr1, 0, gr2
 	PUSH	0,gr2
 	CALL	$keisan
-	LAD	gr1, L0031
+	LAD	gr1, L0038
 	PUSH	0, gr1
 	POP	gr1
 	LAD	gr2, 0
@@ -311,11 +437,11 @@ $block%test	DS	0
 	LAD	gr1, 4
 	PUSH	0, gr1
 	POP	gr1
-	LAD	gr2, L0032
+	LAD	gr2, L0039
 	ST	gr1, 0, gr2
 	PUSH	0,gr2
 	CALL	$keisan
-	LAD	gr1, L0034
+	LAD	gr1, L0041
 	PUSH	0, gr1
 	POP	gr1
 	LAD	gr2, 0
@@ -329,17 +455,1023 @@ $block%test	DS	0
 	LAD	gr2, 0
 	CALL	WRITEINT
 	CALL	WRITELINE
+	LAD	gr1, L0042
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, $i
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	LAD	gr1,-1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	MULA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEINT
+	CALL	WRITELINE
+	LAD	gr1, $i
+	PUSH	0, gr1
+	LAD	gr1, 26
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, $a
+	PUSH	0, gr1
+	LAD	gr1, 123
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+L0043	DS	0
+	LAD	gr1, $i
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JMI	L0046
+	JZE	L0046
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0045
+L0046	LD	gr1, gr0
+	PUSH	0, gr1
+L0045	DS	0
+	POP	gr1
+	CPA	gr1, gr0
+	JZE	L0044
+	LAD	gr1, $a
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	LAD	gr1, $i
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	SUBA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP 	gr1
+	LAD 	gr2, #007F
+	AND 	gr1, gr2
+	PUSH 	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, 32
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, $i
+	PUSH	0, gr1
+	LAD	gr1, $i
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	SUBA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	JUMP	L0043
+L0044	DS	0
+	CALL	WRITELINE
+	LAD	gr1, 0
+	PUSH	0, gr1
+	LAD	gr1, $arrayi
+	POP	gr2
+	LAD	gr3, 5
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, $arrayi
+	POP	gr2
+	LAD	gr3, 5
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 2
+	PUSH	0, gr1
+	LAD	gr1, $arrayi
+	POP	gr2
+	LAD	gr3, 5
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 4
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 3
+	PUSH	0, gr1
+	LAD	gr1, $arrayi
+	POP	gr2
+	LAD	gr3, 5
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 9
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 4
+	PUSH	0, gr1
+	LAD	gr1, $arrayi
+	POP	gr2
+	LAD	gr3, 5
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 16
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, $arrayi
+	PUSH	0, gr1
+	CALL	$print
+	CALL	WRITELINE
+	LAD	gr1, 40
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEINT
+	LAD	gr1, L0047
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 40
+	PUSH	0, gr1
+	POP 	gr1
+	LAD 	gr2, #007F
+	AND 	gr1, gr2
+	PUSH 	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, L0048
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 40
+	PUSH	0, gr1
+	POP	gr1
+	CPA	gr1, gr0
+	JNZ	L0049
+	LD	gr1, gr0
+	PUSH	0, gr1
+	JUMP	L0050
+L0049	LAD	gr1, 1
+	PUSH	0, gr1
+L0050	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, 97
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEINT
+	LAD	gr1, L0051
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 97
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, L0052
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 97
+	PUSH	0, gr1
+	POP	gr1
+	CPA	gr1, gr0
+	JNZ	L0053
+	LD	gr1, gr0
+	PUSH	0, gr1
+	JUMP	L0054
+L0053	LAD	gr1, 1
+	PUSH	0, gr1
+L0054	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEINT
+	LAD	gr1, L0055
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, L0056
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, 0
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	AND	gr1, gr2
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	AND	gr1, gr2
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 2
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	AND	gr1, gr2
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 3
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	AND	gr1, gr2
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 4
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	OR	gr1, gr2
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 5
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	OR	gr1, gr2
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 6
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	OR	gr1, gr2
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, 7
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	LAD	gr1, 0
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	OR	gr1, gr2
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, L0057
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	CALL	WRITELINE
+	LAD	gr1, L0058
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 0
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	LAD	gr1, 124
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0059
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 2
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	LAD	gr1, 124
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, 3
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0060
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	CALL	WRITELINE
+	LAD	gr1, L0061
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 4
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	LAD	gr1, 124
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, 5
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0062
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 6
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	LAD	gr1, 124
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITECHAR
+	LAD	gr1, 7
+	PUSH	0, gr1
+	LAD	gr1, $arrayb
+	POP	gr2
+	LAD	gr3, 8
+	CPA	gr2,gr3
+	JPL	EROV
+	ADDA	gr1, gr2
+	JOV	EOVF
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0063
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 10
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JPL	L0065
+	JZE	L0065
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0064
+L0065	LD	gr1, gr0
+	PUSH	0, gr1
+L0064	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0066
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 10
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JPL	L0068
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0067
+L0068	LD	gr1, gr0
+	PUSH	0, gr1
+L0067	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0069
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 10
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JNZ	L0071
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0070
+L0071	LD	gr1, gr0
+	PUSH	0, gr1
+L0070	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0072
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 10
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JMI	L0074
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0073
+L0074	LD	gr1, gr0
+	PUSH	0, gr1
+L0073	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0075
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 10
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JMI	L0077
+	JZE	L0077
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0076
+L0077	LD	gr1, gr0
+	PUSH	0, gr1
+L0076	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0078
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 10
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JZE	L0080
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0079
+L0080	LD	gr1, gr0
+	PUSH	0, gr1
+L0079	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	CALL	WRITELINE
+	LAD	gr1, L0081
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JPL	L0083
+	JZE	L0083
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0082
+L0083	LD	gr1, gr0
+	PUSH	0, gr1
+L0082	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0084
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JPL	L0086
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0085
+L0086	LD	gr1, gr0
+	PUSH	0, gr1
+L0085	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0087
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JNZ	L0089
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0088
+L0089	LD	gr1, gr0
+	PUSH	0, gr1
+L0088	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0090
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JMI	L0092
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0091
+L0092	LD	gr1, gr0
+	PUSH	0, gr1
+L0091	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0093
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, 1
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	CPA	gr1, gr2
+	JZE	L0095
+	LAD	gr1, 1
+	PUSH	0, gr1
+	JUMP	L0094
+L0095	LD	gr1, gr0
+	PUSH	0, gr1
+L0094	DS	0
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, $b
+	PUSH	0, gr1
+	LAD	gr1, 1
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, L0096
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, $b
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	LAD	gr1, L0097
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, $b
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	CPA	gr1, gr0
+	JZE	L0098
+	LAD	gr1, 0
+	JUMP	L0100
+L0098	LAD	gr1, 1
+L0100	DS	0
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEBOOL
+	CALL	WRITELINE
+	CALL	WRITELINE
+	LAD	gr1, $i
+	PUSH	0, gr1
+	LAD	gr1, 254
+	PUSH	0, gr1
+	POP	gr2
+	POP	gr1
+	ST	gr2,0,gr1
+	LAD	gr1, L0101
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, $i
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEINT
+	CALL	WRITELINE
+	LAD	gr1, L0102
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITESTR
+	LAD	gr1, $i
+	PUSH	0, gr1
+	POP	gr1
+	LD	gr1, 0, gr1
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, #FFFF
+	XOR	gr1, gr2
+	PUSH	0, gr1
+	POP	gr1
+	LAD	gr2, 0
+	CALL	WRITEINT
+	CALL	WRITELINE
 	RET	
-L0021	DC	'i='
-L0022	DC	',j='
-L0023	DC	0
-L0025	DC	'Add'
-L0026	DC	0
-L0028	DC	'Sub'
-L0029	DC	0
-L0031	DC	'Mul'
-L0032	DC	0
-L0034	DC	'Div'
+L0025	DC	'Please enter number ='
+L0026	DC	'Please enter character ='
+L0027	DC	'input character is '
+L0028	DC	'i='
+L0029	DC	',j='
+L0030	DC	0
+L0032	DC	'Add'
+L0033	DC	0
+L0035	DC	'Sub'
+L0036	DC	0
+L0038	DC	'Mul'
+L0039	DC	0
+L0041	DC	'Div'
+L0042	DC	'Minus'
+L0047	DC	' | '
+L0048	DC	' | '
+L0051	DC	' | '
+L0052	DC	' | '
+L0055	DC	' | '
+L0056	DC	' | '
+L0057	DC	'and|true |false'
+L0058	DC	'T  |'
+L0059	DC	'F  |'
+L0060	DC	'or|true |false'
+L0061	DC	'T |'
+L0062	DC	'F |'
+L0063	DC	'10 < 1 is '
+L0066	DC	'10 <= 1 is '
+L0069	DC	'10 = 1 is '
+L0072	DC	'10 >= 1 is '
+L0075	DC	'10 > 1 is '
+L0078	DC	'10 <> 1 is '
+L0081	DC	'1 < 1 is '
+L0084	DC	'1 <= 1 is '
+L0087	DC	'1 = 1 is '
+L0090	DC	'1 >= 1 is '
+L0093	DC	'1 <> 1 is '
+L0096	DC	'b='
+L0097	DC	'not b='
+L0101	DC	'i='
+L0102	DC	'not i='
 ; ------------------------
 ; Utility functions
 ; ------------------------

@@ -282,10 +282,6 @@ int parse_formal_parameters(void){
     token = Scan();
     int ty;
     if((ty = parse_type()) == ERROR) return(ERROR);
-    if(ty == TPARRAYINT || ty == TPARRAYCHAR || ty == TPARRAYBOOL){
-      return(error("formal parameter cant take an array argument"));
-      
-    }
     // 関数引数の追加(対procedure)
     add_formal_type(procid->itp,ty);
     // 関数引数を変数として追加
@@ -505,11 +501,13 @@ int parse_left_part(void){
 
 /* p:0 right,p:1 left,p:2 formal parameter */
 int parse_variable(int p){
+  int isarrayexp = 0;
   int ttype = NORMAL;
   int etype;
   if((ttype = parse_variable_name()) == ERROR) return(ERROR);
   ID * variable_part = referenced_val;
   if(token == TLSQPAREN){
+    isarrayexp = 1;
     if(ttype != TPARRAY){
       return(error("variable with expression needs type array"));
     }
@@ -520,13 +518,17 @@ int parse_variable(int p){
       return(error("array number needs type integer"));
     }
     if(token != TRSQPAREN) return(error("Right squere parenthese is not found"));
-
-    ttype = referenced_val->itp->etp->ttype-4;
-
+    
+    if(referenced_val->itp->etp != NULL){
+      ttype = referenced_val->itp->etp->ttype-4;
+    }else{
+      ttype = referenced_val->itp->ttype;
+    }
+    
 
     token = Scan();
   }
-  asm_ref_val(variable_part);
+  asm_ref_val(variable_part,isarrayexp);
   if(p == 0){
     asm_param_to_real();
   }
@@ -664,7 +666,7 @@ int parse_term(void){
 
 int parse_factor(void){
   int ttype = NORMAL;
-  int fromtype;
+  int fromtype,totype;
   switch(token){
     case TNAME:
       if((ttype = parse_variable(is_in_call_st)) == ERROR) return(ERROR);
@@ -689,21 +691,28 @@ int parse_factor(void){
       token = Scan();
       is_need_new_address = -1;
       if((ttype = parse_factor()) == ERROR) return(ERROR);
-      asm_not();
+      asm_not(ttype);
       break;
     case TINTEGER:
     case TBOOLEAN:
     case TCHAR:
-      fromtype = ttype;
+      if(token == TINTEGER){
+        totype = TPINT;
+      }else if(token == TBOOLEAN){
+        totype = TPBOOL;
+      }else{
+        totype = TPCHAR;
+      }
       is_need_new_address = -1;
       if((ttype = parse_standard_type()) == ERROR) return(ERROR);
       if(token != TLPAREN) return(error("Left paranthese is not found"));
       
       token = Scan();
-      if(parse_expression() == ERROR) return(ERROR);
-
-      asm_cast(fromtype, ttype);
+      if((ttype=parse_expression()) == ERROR) return(ERROR);
+      
+      asm_cast(ttype, totype);
       if(token != TRPAREN) return(error("Right paranthese is not found"));
+      ttype = totype;
       
       token = Scan();
 

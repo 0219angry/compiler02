@@ -3,7 +3,7 @@ CC  = gcc
 # (2)コンパイルオプション
 CFLAGS    = -Wall 
 CFLAGS		+= -g
-# CFLAGS		+= --coverage -fstack-protector
+CFLAGS		+= --coverage -fstack-protector
 # (3)実行ファイル名
 TARGET  = compiler
 # (4)コンパイル対象のソースコード

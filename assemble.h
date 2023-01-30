@@ -50,10 +50,8 @@ int asm_proc_start(ID * localidloot, char * procname);
 int asm_proc_end();
 
 int asm_block_start();
-int asm_parameter(ID * ref);
 int asm_parameter_with_newlabel();
-int asm_ref_val(ID * ref);
-int asm_ref_rval(ID * ref);
+int asm_ref_val(ID * ref,int isarrayexp);
 int asm_param_to_real();
 
 int asm_if_st();
@@ -85,13 +83,12 @@ int asm_DIVA();
 int asm_AND();
 
 int asm_cast(int from, int to);
-int asm_not();
+int asm_not(int ttype);
 
 int asm_call(ID * called);
 int asm_read(ID * ref);
 int asm_readln();
 int asm_output_format(int etype, int num);
-int asm_write();
 int asm_writeln();
 
 int constants_output();

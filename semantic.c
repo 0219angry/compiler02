@@ -116,6 +116,7 @@ TYPE * create_type(int ttype){
       error("unknown type.");
   }
   arraysize = 0;
+  
   return typeptr;
 }
 
@@ -124,11 +125,12 @@ TYPE * create_type(int ttype){
 */
 TYPE *add_formal_type(TYPE *loot, int ttype){
   TYPE *p = loot;
+  int arraysize_attr = arraysize;
   while(p->paratp != NULL){
     p = p->paratp;
   }
-  TYPE *newformaltype = malloc_TYPE();
-  newformaltype->ttype = ttype;
+  TYPE *newformaltype = create_type(ttype);
+  arraysize = arraysize_attr;
   p->paratp = newformaltype;
   return p;
 }

@@ -33,8 +33,17 @@ int asm_return_st(){
 int asm_val(ID * globalidloot){
   ID * id = globalidloot;
   while(id != NULL){
-    if((id->itp)->ttype != TPPROC){
-      fprintf(caslfilep,"$%s\tDC\t0\n",id->name);
+    switch((id->itp)->ttype){
+      case TPPROC:
+        break;
+      case TPINT:
+      case TPCHAR:
+      case TPBOOL:
+        fprintf(caslfilep,"$%s\tDC\t0\n",id->name);
+        break;
+      case TPARRAY:
+        fprintf(caslfilep,"$%s\tDS\t%d\n",id->name,id->itp->arraysize);
+        break;
     }
     id = id->nextp;
   }
@@ -48,11 +57,10 @@ int asm_proc_val(ID * localidloot){
       case TPINT:
       case TPCHAR:
       case TPBOOL:
+      case TPARRAY:
         fprintf(caslfilep,"$%s%%%s\tDC\t0\n",id->name,id->procname);
         break;
-      case TPARRAY:
-        fprintf(caslfilep,"$%s%%%s\tDS\t%d\n",id->name,id->procname,(id->itp)->arraysize);
-        break;
+      
       default:
         return(error("forbidden type."));
     }
@@ -91,7 +99,7 @@ int asm_block_start(){
   return 0;
 }
 
-int asm_ref_val(ID * refed){
+int asm_ref_val(ID * refed,int isarrayexp){
   if(refed->ispara == 1){
     fprintf(caslfilep,"\tLD\tgr1, $%s%%%s\n",refed->name,refed->procname);
   }else if(refed->procname != NULL){
@@ -99,7 +107,7 @@ int asm_ref_val(ID * refed){
   }else{
     fprintf(caslfilep,"\tLAD\tgr1, $%s\n",refed->name);
   }
-  if((refed->itp)->ttype ==TPARRAY){
+  if((refed->itp)->ttype ==TPARRAY && isarrayexp == 1){
     //array型のときの処理
     fprintf(caslfilep,"\tPOP\tgr2\n"); // gr2 is index number.
     fprintf(caslfilep,"\tLAD\tgr3, %d\n",(refed->itp)->arraysize); // gr3 is max index number.
@@ -112,13 +120,7 @@ int asm_ref_val(ID * refed){
   return 0;
 }
 
-int asm_ref_rval(ID * refed){
-  asm_ref_val(refed);
-  fprintf(caslfilep,"\tPOP\tgr1\n");
-  fprintf(caslfilep,"\tLD\tgr1, 0, gr1\n");
-  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
-  return 0;
-}
+
 
 int asm_param_to_real(){
   fprintf(caslfilep,"\tPOP\tgr1\n");
@@ -127,16 +129,7 @@ int asm_param_to_real(){
   return 0;
 }
 
-int asm_parameter(ID * refed){
-  fprintf(caslfilep,"\tPOP\tgr1\n");
-  if(refed->procname == NULL){
-    fprintf(caslfilep,"\tLAD\tgr1, $%s\n",refed->name);
-  }else{
-    fprintf(caslfilep,"\tLAD\tgr1, $%s%%%s\n",refed->name, refed->procname);
-  }
-  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
-  return 0;
-}
+
 
 int asm_parameter_with_newlabel(){
   CON * top = const_top;
@@ -311,7 +304,7 @@ int asm_expression(int opr){
 
   fprintf(caslfilep,"L%04d\tLD\tgr1, gr0\n",if_false_label);
   fprintf(caslfilep,"\tPUSH\t0, gr1\n");
-  fprintf(caslfilep,"L%04d",if_true_label);
+  fprintf(caslfilep,"L%04d\tDS\t0\n",if_true_label);
   return 0;
 }
 
@@ -402,7 +395,7 @@ int asm_cast(int from, int to){
           fprintf(caslfilep,"\tJUMP\tL%04d\n",end_label);
           fprintf(caslfilep,"L%04d\tLAD\tgr1, 1\n",true_label);
           fprintf(caslfilep,"\tPUSH\t0, gr1\n");
-          fprintf(caslfilep,"L%04d\t\t\n",end_label);
+          fprintf(caslfilep,"L%04d\tDS\t0\n",end_label);
           break;
         default:
 
@@ -430,7 +423,7 @@ int asm_cast(int from, int to){
           fprintf(caslfilep,"\tJUMP\tL%04d\n",end_label);
           fprintf(caslfilep,"L%04d\tLAD\tgr1, 1\n",true_label);
           fprintf(caslfilep,"\tPUSH\t0, gr1\n");
-          fprintf(caslfilep,"L%04d\t\t\n",end_label);
+          fprintf(caslfilep,"L%04d\tDS\t0\n",end_label);
           break;
         default:
 
@@ -447,11 +440,31 @@ int asm_cast(int from, int to){
   return 0;
 }
 
-int asm_not(){
-  fprintf(caslfilep,"\tPOP\tgr1\n");
-  fprintf(caslfilep,"\tLAD\tgr2, #FFFF\n");
-  fprintf(caslfilep,"\tXOR\tgr1, gr2\n");
-  fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+int asm_not(int ttype){
+  switch(ttype){
+    case TPINT:
+    case TPCHAR:
+    case TPARRAYINT:
+    case TPARRAYCHAR:
+      fprintf(caslfilep,"\tPOP\tgr1\n");
+      fprintf(caslfilep,"\tLAD\tgr2, #FFFF\n");
+      fprintf(caslfilep,"\tXOR\tgr1, gr2\n");
+      fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+      break;
+    case TPBOOL:
+    case TPARRAYBOOL:
+      push(1);
+      fprintf(caslfilep,"\tPOP\tgr1\n");
+      fprintf(caslfilep,"\tCPA\tgr1, gr0\n");
+      fprintf(caslfilep,"\tJZE\tL%04d\n",lstack->t);
+      fprintf(caslfilep,"\tLAD\tgr1, 0\n");
+      fprintf(caslfilep,"\tJUMP\tL%04d\n",lstack->end);
+      fprintf(caslfilep,"L%04d\tLAD\tgr1, 1\n",lstack->t);
+      fprintf(caslfilep,"L%04d\tDS\t0\n",lstack->end);
+      fprintf(caslfilep,"\tPUSH\t0, gr1\n");
+      pop();
+  }
+  
   return 0;
 }
 
@@ -498,10 +511,7 @@ int asm_output_format(int etype, int num){
   return 0;
 }
 
-int asm_write(){
-  fprintf(caslfilep,"\tCALL\tWRITE\n");
-  return 0;
-}
+
 
 int asm_writeln(){
   fprintf(caslfilep,"\tCALL\tWRITELINE\n");
